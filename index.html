@@ -29,6 +29,16 @@
     }
     #scene { z-index: 1; touch-action: none; }
     #ui { z-index: 2; pointer-events: none; }
+    /* Красный оверлей для эффекта урона */
+    #damageOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(200,0,0,0) 35%, rgba(200,0,0,0.9) 100%);
+      opacity: 0;
+      transition: opacity 0.15s linear;
+    }
     
     .touchOnly { display: none; }
     @media (hover: none) and (pointer: coarse) {
@@ -113,6 +123,7 @@
 
   <canvas id="scene"></canvas>
   <canvas id="ui"></canvas>
+  <div id="damageOverlay"></div>
 
   <script type="module">
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
@@ -124,6 +135,7 @@
     const pauseBtn = document.getElementById("pauseBtn");
     const fireBtn = document.getElementById("fireBtn");
     const jumpBtn = document.getElementById("jumpBtn");
+    const damageOverlay = document.getElementById("damageOverlay");
 
     const renderer = new THREE.WebGLRenderer({ canvas: sceneCanvas, antialias: true });
     renderer.shadowMap.enabled = true;
@@ -758,15 +770,25 @@
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
 
-    const FALLBACK_COLORS = { runner: 0xbf4654, shooter: 0xc47b21, brute: 0x8d3040 };
-    const EMISSIVE_COLORS = { runner: 0x330810, shooter: 0x3a1e00, brute: 0x2a0810 };
+    const FALLBACK_COLORS = {
+      runner: 0xbf4654,
+      shooter: 0xc47b21,
+      brute: 0x8d3040,
+      tactician: 0x3b7a3b
+    };
+    const EMISSIVE_COLORS = {
+      runner: 0x330810,
+      shooter: 0x3a1e00,
+      brute: 0x2a0810,
+      tactician: 0x0e2a0e
+    };
 
     let faceTexture = null;
     let faceTextureReady = false;
     let faceTextureFailed = false;
     let faceAspect = 1;
 
-    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1 };
+    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
 
     const textureLoadedPromise = new Promise((resolve) => {
       textureLoader.load(
@@ -796,15 +818,17 @@
     });
 
     const enemyMats = {
-      runner: new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.runner, emissive: EMISSIVE_COLORS.runner, roughness: 0.8 }),
-      shooter: new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.shooter, emissive: EMISSIVE_COLORS.shooter, roughness: 0.8 }),
-      brute: new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.brute, emissive: EMISSIVE_COLORS.brute, roughness: 0.8 })
+      runner:    new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.runner,    emissive: EMISSIVE_COLORS.runner,    roughness: 0.8 }),
+      shooter:   new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.shooter,   emissive: EMISSIVE_COLORS.shooter,   roughness: 0.8 }),
+      brute:     new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.brute,     emissive: EMISSIVE_COLORS.brute,     roughness: 0.8 }),
+      tactician: new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.tactician, emissive: EMISSIVE_COLORS.tactician, roughness: 0.7, metalness: 0.2 })
     };
 
     const enemyGeos = {
-      runner: new THREE.CapsuleGeometry(1.2, 1.2, 6, 12),
-      shooter: new THREE.CapsuleGeometry(1.3, 1.2, 6, 12),
-      brute: new THREE.CapsuleGeometry(2.1, 1.6, 6, 12)
+      runner:    new THREE.CapsuleGeometry(1.2, 1.2, 6, 12),
+      shooter:   new THREE.CapsuleGeometry(1.3, 1.2, 6, 12),
+      brute:     new THREE.CapsuleGeometry(2.1, 1.6, 6, 12),
+      tactician: new THREE.CapsuleGeometry(1.4, 1.3, 6, 12)
     };
 
     function attachFaceToEnemy(enemy) {
@@ -851,12 +875,13 @@
       plane.lookAt(camera.position.x, plane.position.y, camera.position.z);
     }
 
-    const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9 };
+    const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9, tactician: 2.0 };
     const tracerGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.0, 6);
     tracerGeo.rotateX(Math.PI / 2);
 
     const friendlyTracerMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
     const enemyTracerMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
+    const tacticianTracerMat = new THREE.MeshBasicMaterial({ color: 0x66ffaa });
 
     const pickupGeo = new THREE.BoxGeometry(2.2, 0.9, 1.4);
     const pickupMats = {
@@ -889,16 +914,7 @@
     ];
 
     // ============================================================
-    //  ЗВУКИ — ПУЛЫ (попадание по врагу / попадание по игроку / выстрел)
-    // ============================================================
-    //  Каждый звук имеет свой независимый пул экземпляров, чтобы
-    //  одновременные срабатывания (выстрел + попадание + получение
-    //  урона) не затирали друг друга.
-    //
-    //  ⚠️ Имена файлов должны лежать рядом с index.html:
-    //     dvigj.mp3 — попадание по врагу
-    //     hurt.mp3  — попадание по игроку
-    //     shoot.mp3 — выстрел из оружия
+    //  ЗВУКИ — ПУЛЫ
     // ============================================================
     const SOUNDS = {
       hit:   { path: './dvigj.mp3', volume: 0.6, poolSize: 6 },
@@ -921,8 +937,6 @@
       soundPools[name] = { pool, index: 0, volume: cfg.volume };
     }
 
-    // Браузеры не дают играть звук до первого действия пользователя.
-    // Запускаем все пулы на нулевой громкости, чтобы "разблокировать".
     function unlockAudio() {
       if (audioUnlocked) return;
       audioUnlocked = true;
@@ -961,6 +975,121 @@
     function playHurtSound()  { playSound('hurt'); }
     function playShootSound() { playSound('shoot'); }
 
+    // ============================================================
+    //  ЭФФЕКТ УРОНА — КРАСНЫЙ ЭКРАН + ТРЕЩИНЫ
+    // ============================================================
+    //  damageLevel: 0..1, плавно растёт при уроне и спадает за 4 сек.
+    //  cracks[]    — список трещин в экранных координатах (css-пиксели),
+    //                каждая со своим временем жизни (ttl).
+    // ============================================================
+    const DAMAGE_DECAY_TIME = 4.0;    // за сколько секунд без урона полностью проходит
+    const CRACK_TTL = 4.0;            // время жизни одной трещины
+    let damageLevel = 0;
+    let timeSinceDamage = 999;
+    const cracks = [];
+
+    // Событие получения урона: усиливает красноту, добавляет трещины
+    function onPlayerDamaged(amount, hitWorldX, hitWorldZ) {
+      // Уровень красноты растёт нелинейно (сильный удар — резкий всплеск)
+      const add = Math.min(0.7, amount / 45);
+      damageLevel = Math.min(1, damageLevel + add + 0.15);
+      timeSinceDamage = 0;
+
+      // Проецируем место попадания на экран (если переданы координаты)
+      let sx = view.cssW * (0.3 + Math.random() * 0.4);
+      let sy = view.cssH * (0.3 + Math.random() * 0.4);
+
+      if (typeof hitWorldX === 'number' && typeof hitWorldZ === 'number') {
+        _projVec.set(hitWorldX, EYE_HEIGHT, hitWorldZ);
+        _projVec.project(camera);
+        if (_projVec.z <= 1) {
+          sx = (_projVec.x * 0.5 + 0.5) * view.cssW;
+          sy = (-_projVec.y * 0.5 + 0.5) * view.cssH;
+        }
+      }
+
+      // Создаём 2–4 ветвящиеся трещины из точки попадания
+      const branchCount = 2 + Math.floor(Math.random() * 3);
+      for (let b = 0; b < branchCount; b++) {
+        const branches = [];
+        let x = sx, y = sy;
+        let angle = Math.random() * Math.PI * 2;
+        const segments = 4 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < segments; i++) {
+          const len = 20 + Math.random() * 55;
+          angle += (Math.random() - 0.5) * 1.3;
+          const nx = x + Math.cos(angle) * len;
+          const ny = y + Math.sin(angle) * len;
+          branches.push([x, y, nx, ny]);
+          x = nx; y = ny;
+        }
+        cracks.push({
+          branches,
+          ttl: CRACK_TTL,
+          maxTtl: CRACK_TTL,
+          seed: Math.random() * 1000
+        });
+      }
+    }
+
+    function updateDamageEffect(dt) {
+      timeSinceDamage += dt;
+      if (timeSinceDamage > 0.2) {
+        // Плавное затухание: за DAMAGE_DECAY_TIME секунд должно упасть до 0
+        damageLevel = Math.max(0, damageLevel - dt / DAMAGE_DECAY_TIME * 1.3);
+      }
+
+      // Трещины живут CRACK_TTL секунд
+      for (let i = cracks.length - 1; i >= 0; i--) {
+        cracks[i].ttl -= dt;
+        if (cracks[i].ttl <= 0) cracks.splice(i, 1);
+      }
+
+      // Обновляем HTML-оверлей
+      if (damageLevel > 0.001) {
+        damageOverlay.style.opacity = String(damageLevel * 0.85);
+      } else {
+        damageOverlay.style.opacity = "0";
+      }
+    }
+
+    function drawCracks() {
+      if (cracks.length === 0) return;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (const crack of cracks) {
+        const lifeRatio = crack.ttl / crack.maxTtl;   // 1 → 0
+        // Альфа-канал: сначала яркие, потом тускнеют
+        const alpha = Math.min(1, lifeRatio * 1.5) * 0.9;
+
+        for (let pass = 0; pass < 2; pass++) {
+          // pass 0 — тёмный контур, pass 1 — светлая сердцевина
+          if (pass === 0) {
+            ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+            ctx.lineWidth = 4;
+          } else {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.55})`;
+            ctx.lineWidth = 1.4;
+          }
+
+          for (const [x1, y1, x2, y2] of crack.branches) {
+            ctx.beginPath();
+            // Небольшой "излом" для естественности
+            const mx = (x1 + x2) / 2 + (Math.sin(crack.seed + x1) * 6);
+            const my = (y1 + y2) / 2 + (Math.cos(crack.seed + y1) * 6);
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(mx, my, x2, y2);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+
     let state = "menu";
     let globalTime = 0;
     let score = 0;
@@ -972,7 +1101,7 @@
     const EYE_HEIGHT = 2.1;
 
     // ============================================================
-    //  ПРЫЖОК — ВЫСОКИЙ И «ЛУННЫЙ»
+    //  ПРЫЖОК
     // ============================================================
     const JUMP_HEIGHT = 4;
     const JUMP_GRAVITY = 7;
@@ -1016,6 +1145,10 @@
       for (const b of bullets) scene.remove(b.mesh);
       for (const p of pickups) scene.remove(p.mesh);
       enemies = []; bullets = []; pickups = [];
+      cracks.length = 0;
+      damageLevel = 0;
+      timeSinceDamage = 999;
+      damageOverlay.style.opacity = "0";
     }
 
     function startWave(n) {
@@ -1036,7 +1169,7 @@
     }
 
     function startGame() {
-      unlockAudio();   // разблокировка звука на user gesture
+      unlockAudio();
       resetGame();
       state = "playing";
       if (!isTouchDevice && sceneCanvas.requestPointerLock) {
@@ -1104,8 +1237,10 @@
     function spawnEnemy() {
       let type = "runner";
       const roll = Math.random();
-      if (wave >= 3 && roll < 0.18) type = "brute";
-      else if (wave >= 2 && roll < 0.48) type = "shooter";
+      // Тактик появляется с 4-й волны, шанс 22%
+      if (wave >= 4 && roll < 0.22) type = "tactician";
+      else if (wave >= 3 && roll < 0.40) type = "brute";
+      else if (wave >= 2 && roll < 0.65) type = "shooter";
 
       let r = enemyRadii[type];
 
@@ -1126,6 +1261,8 @@
         hp = 70 + wave * 16; speed = 5 + wave * 0.15; damage = 22; scoreValue = 35; y = enemyY.brute;
       } else if (type === "shooter") {
         hp = 26 + wave * 6; speed = 6.2 + wave * 0.2; damage = 8; scoreValue = 18; y = enemyY.shooter;
+      } else if (type === "tactician") {
+        hp = 45 + wave * 9; speed = 8.5 + wave * 0.25; damage = 11; scoreValue = 45; y = enemyY.tactician;
       } else {
         hp = 18 + wave * 5; speed = 8 + wave * 0.3; damage = 10; scoreValue = 10; y = enemyY.runner;
       }
@@ -1137,8 +1274,15 @@
 
       const enemy = {
         type, x, z, y, r, hp, maxHp: hp, speed, damage, score: scoreValue, mesh,
-        fireCooldown: 0.8 + Math.random() * 0.7, strafeDir: Math.random() < 0.5 ? -1 : 1,
-        facePlane: null
+        fireCooldown: 0.8 + Math.random() * 0.7,
+        strafeDir: Math.random() < 0.5 ? -1 : 1,
+        facePlane: null,
+        // Специфичные для тактика поля
+        burstLeft: 0,           // осталось выстрелов в очереди
+        burstCooldown: 0,       // пауза внутри очереди
+        dodgeCooldown: 0,       // время до следующего уклонения
+        coverTarget: null,      // ближайшее укрытие для отступления
+        retreatMode: false      // если HP < 40% — отступает
       };
 
       attachFaceToEnemy(enemy);
@@ -1156,7 +1300,7 @@
       const weapon = weapons[player.weapon];
       player.fireCooldown = weapon.fireDelay;
 
-      playShootSound();          // ← звук выстрела
+      playShootSound();
 
       const direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
@@ -1209,8 +1353,181 @@
 
     const mouseLookAccum = { x: 0, y: 0 };
 
+    // ============================================================
+    //  ЛОГИКА ТАКТИКА
+    // ============================================================
+    //  Ищет ближайшее укрытие к игроку и возвращает точку за ним
+    //  (чтобы тактик отошёл так, что между ним и игроком встанет
+    //  препятствие).
+    function findCoverPoint(enemy) {
+      let best = null;
+      let bestScore = Infinity;
+
+      for (const o of obstacles) {
+        // Ищем только "большие" укрытия
+        if (o.w < 3 || o.d < 3) continue;
+
+        // Точка позади препятствия относительно игрока
+        const toEnemyX = enemy.x - o.x;
+        const toEnemyZ = enemy.z - o.z;
+        const len = Math.hypot(toEnemyX, toEnemyZ) || 1;
+        const dirX = toEnemyX / len, dirZ = toEnemyZ / len;
+
+        // Позиция за укрытием — на 1.5× максимальной полуширины
+        const coverDist = Math.max(o.w, o.d) * 0.7 + 2;
+        const tx = o.x + dirX * coverDist;
+        const tz = o.z + dirZ * coverDist;
+
+        if (hitsObstacleOrBounds(tx, tz, enemy.r)) continue;
+
+        // Не слишком далеко от тактика
+        const d = Math.hypot(tx - enemy.x, tz - enemy.z);
+        if (d > 22) continue;
+
+        // Считаем, реально ли укрытие от игрока? Проверим середину
+        const midX = (tx + player.x) / 2;
+        const midZ = (tz + player.z) / 2;
+        let covered = false;
+        for (const o2 of obstacles) {
+          if (circleRectCollideXZ(midX, midZ, 1.5, o2)) { covered = true; break; }
+        }
+        if (!covered) continue;
+
+        const score = d;
+        if (score < bestScore) {
+          bestScore = score;
+          best = { x: tx, z: tz };
+        }
+      }
+      return best;
+    }
+
+    function updateTactician(e, dt, dist, nx, nz) {
+      // Инициализация кулдаунов
+      e.dodgeCooldown -= dt;
+      e.burstCooldown -= dt;
+
+      // Режим отступления при низком HP
+      e.retreatMode = e.hp / e.maxHp < 0.4;
+
+      let mx = 0, mz = 0;
+
+      // ============================================================
+      //  УКЛОНЕНИЕ ОТ ПУЛЬ ИГРОКА
+      // ============================================================
+      //  Ищем вражеские (для тактика) пули рядом и уходим в сторону
+      let dodging = false;
+      if (e.dodgeCooldown <= 0) {
+        for (const b of bullets) {
+          if (!b.friendly) continue;
+          const dxB = e.x - b.x, dzB = e.z - b.z;
+          const distB = Math.hypot(dxB, dzB);
+          if (distB > 8) continue;
+          // Пуля летит в нашу сторону?
+          const dot = (b.vx * (e.x - b.x) + b.vz * (e.z - b.z));
+          if (dot <= 0) continue;
+          // Уходим перпендикулярно направлению пули
+          const bDirLen = Math.hypot(b.vx, b.vz) || 1;
+          const ux = b.vx / bDirLen, uz = b.vz / bDirLen;
+          // Перпендикуляр (два варианта — выбираем в сторону от пули)
+          const perpX = -uz, perpZ = ux;
+          const sideTest = perpX * dxB + perpZ * dzB;
+          const sgn = sideTest >= 0 ? 1 : -1;
+          mx += perpX * sgn;
+          mz += perpZ * sgn;
+          dodging = true;
+          e.dodgeCooldown = 0.35 + Math.random() * 0.25;
+          break;
+        }
+      }
+
+      if (!dodging) {
+        // ============================================================
+        //  ПОЗИЦИОНИРОВАНИЕ
+        // ============================================================
+        if (e.retreatMode) {
+          // Ищем укрытие и бежим к нему, либо просто отступаем
+          if (!e.coverTarget || Math.hypot(e.coverTarget.x - e.x, e.coverTarget.z - e.z) < 2) {
+            e.coverTarget = findCoverPoint(e);
+          }
+          if (e.coverTarget) {
+            const cx = e.coverTarget.x - e.x;
+            const cz = e.coverTarget.z - e.z;
+            const cl = Math.hypot(cx, cz) || 1;
+            mx = cx / cl; mz = cz / cl;
+          } else {
+            mx = -nx; mz = -nz;
+          }
+        } else {
+          // Держим дистанцию 20–26 м
+          if (dist > 26) { mx = nx; mz = nz; }
+          else if (dist < 20) { mx = -nx; mz = -nz; }
+          else {
+            // Круговое движение (страйф) вокруг игрока
+            mx = -nz * e.strafeDir;
+            mz = nx * e.strafeDir;
+            // Иногда меняем сторону
+            if (Math.random() < dt * 0.5) e.strafeDir *= -1;
+          }
+        }
+
+        // Небольшое боковое смещение, чтобы не стоять в линию
+        mx += (Math.random() - 0.5) * 0.3;
+        mz += (Math.random() - 0.5) * 0.3;
+      }
+
+      // Нормализуем
+      const ml = Math.hypot(mx, mz);
+      if (ml > 0.01) { mx /= ml; mz /= ml; }
+
+      moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
+
+      // ============================================================
+      //  СТРЕЛЬБА ОЧЕРЕДЯМИ
+      // ============================================================
+      if (dist < 45 && !e.retreatMode) {
+        // Старт новой очереди
+        if (e.burstLeft === 0 && e.fireCooldown <= 0) {
+          e.burstLeft = 3 + Math.floor(Math.random() * 3); // 3–5 выстрелов
+          e.burstCooldown = 0;
+          e.fireCooldown = 2.0 + Math.random() * 1.5;      // пауза между очередями
+        }
+
+        // Стреляем внутри очереди
+        if (e.burstLeft > 0 && e.burstCooldown <= 0) {
+          e.burstLeft--;
+          e.burstCooldown = 0.14;
+
+          const targetY = EYE_HEIGHT, fromY = e.y;
+          const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
+          const tlen = Math.hypot(tdx, tdy, tdz) || 1;
+          const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
+
+          // Тактик точнее обычного стрелка
+          dir.x += (Math.random() - 0.5) * 0.04;
+          dir.y += (Math.random() - 0.5) * 0.04;
+          dir.z += (Math.random() - 0.5) * 0.04;
+          dir.normalize();
+
+          const bx = e.x + nx * (e.r + 0.5), bz = e.z + nz * (e.r + 0.5);
+          const mesh = new THREE.Mesh(tracerGeo, tacticianTracerMat);
+          mesh.position.set(bx, fromY, bz);
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+          scene.add(mesh);
+
+          bullets.push({
+            x: bx, y: fromY, z: bz,
+            vx: dir.x * 38, vy: dir.y * 38, vz: dir.z * 38,
+            r: 0.4, damage: 11, friendly: false, life: 2.5, mesh, is3D: true
+          });
+        }
+      }
+    }
+
     function update(dt) {
       if (state !== "playing") return;
+
+      updateDamageEffect(dt);
 
       if (player.jumping) {
         player.jumpVel -= JUMP_GRAVITY * dt;
@@ -1230,10 +1547,10 @@
       }
 
       let inputFwd = 0, inputRight = 0;
-      if (keys["w"] || keys["arrowup"]) inputFwd += 1;
-      if (keys["s"] || keys["arrowdown"]) inputFwd -= 1;
-      if (keys["d"] || keys["arrowright"]) inputRight += 1;
-      if (keys["a"] || keys["arrowleft"]) inputRight -= 1;
+      if (keys["w"] || keys["ц"] || keys["arrowup"]) inputFwd += 1;
+      if (keys["s"] || keys["ы"] || keys["arrowdown"]) inputFwd -= 1;
+      if (keys["d"] || keys["в"] || keys["arrowright"]) inputRight += 1;
+      if (keys["a"] || keys["ф"] || keys["arrowleft"]) inputRight -= 1;
 
       if (touch.moveId !== null) {
         inputFwd -= touch.moveVector.y;
@@ -1270,10 +1587,13 @@
         const dx = player.x - e.x, dz = player.z - e.z;
         const dist = Math.hypot(dx, dz) || 1;
         const nx = dx / dist, nz = dz / dist;
-        let mx = 0, mz = 0;
 
-        if (e.type === "shooter") {
+        if (e.type === "tactician") {
           e.fireCooldown -= dt;
+          updateTactician(e, dt, dist, nx, nz);
+        } else if (e.type === "shooter") {
+          e.fireCooldown -= dt;
+          let mx = 0, mz = 0;
           if (dist > 28) { mx = nx; mz = nz; }
           else if (dist < 18) { mx = -nx; mz = -nz; }
           else { mx = -nz * e.strafeDir; mz = nx * e.strafeDir; }
@@ -1301,19 +1621,21 @@
             });
             e.fireCooldown = Math.max(0.7, 1.35 - wave * 0.03);
           }
+
+          moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
         } else {
-          mx = nx; mz = nz;
+          // runner / brute — просто бегут на игрока
+          moveWithCollision(e, nx * e.speed * dt, nz * e.speed * dt);
         }
 
-        moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
         e.mesh.position.set(e.x, e.y, e.z);
         e.mesh.rotation.y = Math.atan2(dx, dz);
-
         updateFacePlaneTransform(e);
 
         if (dist < e.r + player.r + 0.3 && player.invuln <= 0) {
           player.hp -= e.damage;
-          playHurtSound();               // ← звук тарана от врага
+          playHurtSound();
+          onPlayerDamaged(e.damage, e.x, e.z);
           player.invuln = 0.7;
           moveWithCollision(player, nx * 1.8, nz * 1.8);
         }
@@ -1340,7 +1662,7 @@
             const dy = Math.abs(b.y - e.y);
             if (dh < b.r + e.r && dy < e.y + 0.8) {
               e.hp -= b.damage;
-              playHitSound();               // ← звук попадания по врагу
+              playHitSound();
               scene.remove(b.mesh);
               bullets.splice(i, 1);
               removed = true;
@@ -1359,7 +1681,8 @@
           const dy = Math.abs(b.y - EYE_HEIGHT);
           if (dh < b.r + player.r + 0.3 && dy < 1.4 && player.invuln <= 0) {
             player.hp -= b.damage;
-            playHurtSound();               // ← звук попадания по игроку
+            playHurtSound();
+            onPlayerDamaged(b.damage, b.x, b.z);
             player.invuln = 0.45;
             scene.remove(b.mesh);
             bullets.splice(i, 1);
@@ -1473,12 +1796,17 @@
         ctx.fillStyle = "rgba(0,0,0,0.72)";
         ctx.fillRect(x - 1, y - 1, barW + 2, barH + 2);
 
-        const hue = hpRatio * 120;
-        ctx.fillStyle = `hsl(${hue}, 78%, 55%)`;
+        // Тактик — с зелёной рамкой, чтобы выделить
+        if (e.type === "tactician") {
+          ctx.fillStyle = `hsl(${140 + hpRatio * 40}, 80%, ${40 + hpRatio * 20}%)`;
+        } else {
+          const hue = hpRatio * 120;
+          ctx.fillStyle = `hsl(${hue}, 78%, 55%)`;
+        }
         ctx.fillRect(x, y, barW * hpRatio, barH);
 
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = e.type === "tactician" ? "rgba(120,255,160,0.9)" : "rgba(255,255,255,0.55)";
+        ctx.lineWidth = e.type === "tactician" ? 1.5 : 1;
         ctx.strokeRect(x + 0.5, y + 0.5, barW - 1, barH - 1);
       }
     }
@@ -1507,6 +1835,9 @@
       ctx.fillRect(barX, barY, barW * hpRatio, barH);
 
       drawEnemyHealthBars();
+
+      // Трещины рисуем поверх сцены, но под прицелом
+      drawCracks();
 
       const cx = view.cssW / 2, cy = view.cssH / 2;
       const gap = 6, length = 12, thickness = 2;
