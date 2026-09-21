@@ -834,7 +834,6 @@
       runner: 0x330810, shooter: 0x3a1e00, brute: 0x2a0810, tactician: 0x0e2a0e
     };
 
-    // Текстуры лиц по типам
     const faceTextures = { runner: null, shooter: null, brute: null, tactician: null };
     const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
 
@@ -858,7 +857,6 @@
       return p;
     }
 
-    // Шаг 1: putin.jpg → все типы
     loadFaceTexture(FACE_IMAGE_DEFAULT).then((data) => {
       if (data) {
         for (const t of Object.keys(faceTextures)) faceTextures[t] = data;
@@ -868,7 +866,6 @@
       }
     });
 
-    // Шаг 2: опциональные override-картинки
     for (const type in FACE_IMAGE_OVERRIDES) {
       loadFaceTexture(FACE_IMAGE_OVERRIDES[type]).then((data) => {
         if (!data) return;
@@ -890,43 +887,29 @@
     // ============================================================
     //  ЧЕЛОВЕКОПОДОБНЫЕ МОДЕЛИ ВРАГОВ
     // ============================================================
-    //  Каждый враг — группа из примитивов: голова (сфера),
-    //  торс (бокс), две руки, две ноги. Все части одного цвета
-    //  тела врага, с эмиссией под тон типа. Лицо (billboard
-    //  с картинкой) ставится отдельно, как раньше.
-    //
-    //  h — общая высота (примерно как раньше y-координата),
-    //  r — радиус для коллизий (оставлен прежним).
+    //  Модель строится так, чтобы её НОГИ начинались от y = 0.
+    //  То есть если поставить mesh.position.y = 0, враг стоит
+    //  на земле. Логика игры (коллизия, центр для стрельбы)
+    //  по-прежнему использует enemyY[type] — центр фигуры.
     // ============================================================
+    const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9, tactician: 2.0 };
+
     function buildHumanoidMesh(type) {
-      const colors = FALLBACK_COLORS;
-      const emissives = EMISSIVE_COLORS;
-      const bodyColor = colors[type];
-      const emissiveColor = emissives[type];
+      const bodyColor = FALLBACK_COLORS[type];
+      const emissiveColor = EMISSIVE_COLORS[type];
 
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: bodyColor,
-        emissive: emissiveColor,
-        emissiveIntensity: 0.6,
-        roughness: 0.85
+        color: bodyColor, emissive: emissiveColor, emissiveIntensity: 0.6, roughness: 0.85
       });
       const headMat = new THREE.MeshStandardMaterial({
-        color: bodyColor,
-        emissive: emissiveColor,
-        emissiveIntensity: 0.5,
-        roughness: 0.7
+        color: bodyColor, emissive: emissiveColor, emissiveIntensity: 0.5, roughness: 0.7
       });
       const limbMat = new THREE.MeshStandardMaterial({
-        color: bodyColor,
-        emissive: emissiveColor,
-        emissiveIntensity: 0.4,
-        roughness: 0.9
+        color: bodyColor, emissive: emissiveColor, emissiveIntensity: 0.4, roughness: 0.9
       });
 
       const group = new THREE.Group();
 
-      // --- Пропорции зависят от типа ---
-      // runner и shooter — обычные, brute — крупнее, tactician — чуть стройнее
       let scale = 1;
       let shoulders = 0.85;
       if (type === "brute")     { scale = 1.35; shoulders = 1.15; }
@@ -934,73 +917,56 @@
       if (type === "shooter")   { scale = 1.0;  shoulders = 0.9;  }
       if (type === "runner")    { scale = 0.95; shoulders = 0.75; }
 
-      // --- Торс ---
-      const torsoW = 0.75 * scale * shoulders;
-      const torsoH = 1.2 * scale;
-      const torsoD = 0.45 * scale;
-      const torso = new THREE.Mesh(
-        new THREE.BoxGeometry(torsoW, torsoH, torsoD),
-        bodyMat
-      );
-      torso.position.y = 1.6 * scale;
-      torso.castShadow = true;
-      torso.receiveShadow = true;
-      group.add(torso);
-
-      // --- Голова ---
-      const headR = 0.32 * scale;
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(headR, 12, 10),
-        headMat
-      );
-      head.position.y = 1.6 * scale + torsoH / 2 + headR * 0.95;
-      head.castShadow = true;
-      head.receiveShadow = true;
-      group.add(head);
-
-      // --- Руки ---
-      const armLen = 1.15 * scale;
-      const armW = 0.18 * scale;
-      const armD = 0.18 * scale;
-
-      const armL = new THREE.Mesh(
-        new THREE.BoxGeometry(armW, armLen, armD),
-        limbMat
-      );
-      armL.position.set(-(torsoW / 2 + armW / 2 + 0.02), 1.6 * scale - armLen / 2 + 0.15 * scale, 0);
-      armL.castShadow = true;
-      group.add(armL);
-
-      const armR = new THREE.Mesh(
-        new THREE.BoxGeometry(armW, armLen, armD),
-        limbMat
-      );
-      armR.position.set((torsoW / 2 + armW / 2 + 0.02), 1.6 * scale - armLen / 2 + 0.15 * scale, 0);
-      armR.castShadow = true;
-      group.add(armR);
-
-      // --- Ноги ---
+      // Ноги — начинаются от y = 0 и растут вверх
       const legLen = 1.0 * scale;
       const legW = 0.22 * scale;
       const legD = 0.22 * scale;
 
-      const legL = new THREE.Mesh(
-        new THREE.BoxGeometry(legW, legLen, legD),
-        limbMat
-      );
-      legL.position.set(-torsoW * 0.28, legLen / 2, 0);
+      const legL = new THREE.Mesh(new THREE.BoxGeometry(legW, legLen, legD), limbMat);
+      legL.position.set(-0.30 * scale, legLen / 2, 0);
       legL.castShadow = true;
       group.add(legL);
 
-      const legR = new THREE.Mesh(
-        new THREE.BoxGeometry(legW, legLen, legD),
-        limbMat
-      );
-      legR.position.set(torsoW * 0.28, legLen / 2, 0);
+      const legR = new THREE.Mesh(new THREE.BoxGeometry(legW, legLen, legD), limbMat);
+      legR.position.set(0.30 * scale, legLen / 2, 0);
       legR.castShadow = true;
       group.add(legR);
 
-      // Ссылки на части для анимации (лёгкое покачивание при ходьбе)
+      // Торс — от конца ног вверх
+      const torsoW = 0.75 * scale * shoulders;
+      const torsoH = 1.2 * scale;
+      const torsoD = 0.45 * scale;
+      const torsoY = legLen + torsoH / 2;
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoW, torsoH, torsoD), bodyMat);
+      torso.position.y = torsoY;
+      torso.castShadow = true;
+      torso.receiveShadow = true;
+      group.add(torso);
+
+      // Голова
+      const headR = 0.32 * scale;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 12, 10), headMat);
+      head.position.y = legLen + torsoH + headR * 0.95;
+      head.castShadow = true;
+      head.receiveShadow = true;
+      group.add(head);
+
+      // Руки — свисают от верхней части торса
+      const armLen = 1.15 * scale;
+      const armW = 0.18 * scale;
+      const armD = 0.18 * scale;
+      const armY = torsoY + torsoH / 2 - armLen / 2 - 0.05 * scale;
+
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(armW, armLen, armD), limbMat);
+      armL.position.set(-(torsoW / 2 + armW / 2 + 0.02), armY, 0);
+      armL.castShadow = true;
+      group.add(armL);
+
+      const armR = new THREE.Mesh(new THREE.BoxGeometry(armW, armLen, armD), limbMat);
+      armR.position.set(torsoW / 2 + armW / 2 + 0.02, armY, 0);
+      armR.castShadow = true;
+      group.add(armR);
+
       group.userData.limbs = {
         armL, armR, legL, legR,
         baseArmL: armL.position.clone(),
@@ -1019,18 +985,11 @@
       tactician: buildHumanoidMesh("tactician")
     };
 
-    // Шаблон для клонирования: клонируем группы при спавне
     function cloneHumanoid(type) {
       const src = enemyMeshes[type];
       const clone = src.clone(true);
-      // Клонировать нужно и userData.limbs
-      const limbs = src.userData.limbs;
-      const cLimbs = {
-        armL: clone.children.find(c => c === null) // временно
-      };
-      // Проще: собираем заново по индексам, потому что порядок сохранён
-      // children: [torso, head, armL, armR, legL, legR]
-      const [torso, head, armL, armR, legL, legR] = clone.children;
+      // children: [legL, legR, torso, head, armL, armR]
+      const [legL, legR, torso, head, armL, armR] = clone.children;
       clone.userData.limbs = {
         armL, armR, legL, legR,
         baseArmL: armL.position.clone(),
@@ -1039,10 +998,7 @@
         baseLegR: legR.position.clone()
       };
       clone.traverse(obj => {
-        if (obj.isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
+        if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; }
       });
       return clone;
     }
@@ -1071,6 +1027,7 @@
       updateFacePlaneTransform(enemy);
     }
 
+    // Лицо-билборд — на высоте головы врага (фиксированной для типа)
     function updateFacePlaneTransform(enemy) {
       const plane = enemy.facePlane;
       if (!plane) return;
@@ -1081,17 +1038,19 @@
       const dh = Math.hypot(dx, dz) || 1;
       const ux = dx / dh, uz = dz / dh;
 
-      // Лицо чуть выше головы
+      // enemyY — это "центр" фигуры по логике игры, но модель
+      // стоит на земле. Лицо ставим на высоту головы.
+      const faceY = enemyY[enemy.type] + 0.5;
+
       plane.position.set(
         enemy.x + ux * (r * 0.35 + 0.1),
-        enemy.y + 0.85,
+        faceY,
         enemy.z + uz * (r * 0.35 + 0.1)
       );
 
       plane.lookAt(camera.position.x, plane.position.y, camera.position.z);
     }
 
-    const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9, tactician: 2.0 };
     const tracerGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.0, 6);
     tracerGeo.rotateX(Math.PI / 2);
 
@@ -1123,34 +1082,21 @@
     ];
 
     // ============================================================
-    //  ЗВУКИ — попадание, урон игрока, выстрел
-    //  + РАЗНЫЕ ЗВУКИ ПОПАДАНИЯ ДЛЯ КАЖДОГО ТИПА ВРАГА
-    // ============================================================
-    //  Базовый: dvigj.mp3 — играет при попадании во ВСЕХ, если
-    //  для конкретного типа нет своей картинки.
-    //
-    //  Опционально (если файл есть — играет вместо dvigj.mp3):
-    //    ./hit_runner.mp3
-    //    ./hit_shooter.mp3
-    //    ./hit_brute.mp3
-    //    ./hit_tactician.mp3
+    //  ЗВУКИ
     // ============================================================
     const HIT_SOUND_BASE = { path: './dvigj.mp3', volume: 0.6, poolSize: 6 };
-
-    // Опциональные override-звуки попадания по типу врага.
     const HIT_SOUND_OVERRIDES = {
       runner:    { path: './hit_runner.mp3',    volume: 0.6, poolSize: 4 },
       shooter:   { path: './hit_shooter.mp3',   volume: 0.6, poolSize: 4 },
       brute:     { path: './hit_brute.mp3',     volume: 0.7, poolSize: 4 },
       tactician: { path: './hit_tactician.mp3', volume: 0.6, poolSize: 4 }
     };
-
     const SOUNDS = {
       hurt:  { path: './hurt.mp3',  volume: 0.7, poolSize: 3 },
       shoot: { path: './shoot.mp3', volume: 0.5, poolSize: 4 }
     };
 
-    const soundPools = {}; // { name: { pool, index, volume } }
+    const soundPools = {};
     let audioUnlocked = false;
 
     function createPool(name, cfg) {
@@ -1164,31 +1110,22 @@
       soundPools[name] = { pool, index: 0, volume: cfg.volume };
     }
 
-    // Создаём пул для базового попадания
     createPool('hit', HIT_SOUND_BASE);
 
-    // Для опциональных звуков — сначала пробуем загрузить, потом создаём пул
     function tryCreateOptionalPool(name, cfg) {
       const probe = new Audio(cfg.path);
       probe.preload = 'auto';
-      // Проверяем доступность через события loadeddata/error
       probe.addEventListener('loadeddata', () => {
         createPool(name, cfg);
-        // Если звук уже разблокирован — применим к нему громкость
-        if (audioUnlocked) {
-          for (const a of soundPools[name].pool) a.volume = cfg.volume;
-        }
+        if (audioUnlocked) for (const a of soundPools[name].pool) a.volume = cfg.volume;
       }, { once: true });
-      probe.addEventListener('error', () => {
-        // Файла нет — оставим fallback на 'hit'
-      }, { once: true });
+      probe.addEventListener('error', () => {}, { once: true });
     }
 
     for (const type in HIT_SOUND_OVERRIDES) {
       tryCreateOptionalPool('hit_' + type, HIT_SOUND_OVERRIDES[type]);
     }
 
-    // Урон игроку и выстрел
     createPool('hurt', SOUNDS.hurt);
     createPool('shoot', SOUNDS.shoot);
 
@@ -1221,8 +1158,6 @@
       } catch (e) {}
     }
 
-    // Играем попадание с учётом типа врага.
-    // Если для типа есть свой звук — играет он, иначе dvigj.mp3.
     function playHitSoundForType(type) {
       const specific = 'hit_' + type;
       if (soundPools[specific]) playSound(specific);
@@ -1466,30 +1401,33 @@
         if (!hitsObstacleOrBounds(x, z, r + 0.4) && distToPlayer > 18) break;
       }
 
-      let hp, speed, damage, scoreValue, y;
+      let hp, speed, damage, scoreValue, centerY;
       if (type === "brute") {
-        hp = 70 + wave * 16; speed = 5 + wave * 0.15; damage = 22; scoreValue = 35; y = enemyY.brute;
+        hp = 70 + wave * 16; speed = 5 + wave * 0.15; damage = 22; scoreValue = 35; centerY = enemyY.brute;
       } else if (type === "shooter") {
-        hp = 26 + wave * 6; speed = 6.2 + wave * 0.2; damage = 8; scoreValue = 18; y = enemyY.shooter;
+        hp = 26 + wave * 6; speed = 6.2 + wave * 0.2; damage = 8; scoreValue = 18; centerY = enemyY.shooter;
       } else if (type === "tactician") {
-        hp = 45 + wave * 9; speed = 8.5 + wave * 0.25; damage = 11; scoreValue = 45; y = enemyY.tactician;
+        hp = 45 + wave * 9; speed = 8.5 + wave * 0.25; damage = 11; scoreValue = 45; centerY = enemyY.tactician;
       } else {
-        hp = 18 + wave * 5; speed = 8 + wave * 0.3; damage = 10; scoreValue = 10; y = enemyY.runner;
+        hp = 18 + wave * 5; speed = 8 + wave * 0.3; damage = 10; scoreValue = 10; centerY = enemyY.runner;
       }
 
-      // Клонируем человекообразную модель
       const mesh = cloneHumanoid(type);
-      mesh.position.set(x, y, z);
+      // >>> ФИКС: ноги модели начинаются от y = 0, поэтому
+      // ставим меш ровно на землю, а центр фигуры храним в e.y
+      // отдельно (используется для стрельбы и коллизий).
+      mesh.position.set(x, 0, z);
       scene.add(mesh);
 
       const enemy = {
-        type, x, z, y, r, hp, maxHp: hp, speed, damage, score: scoreValue, mesh,
+        type, x, z,
+        y: centerY,             // центр фигуры (логика стрельбы/урона)
+        r, hp, maxHp: hp, speed, damage, score: scoreValue, mesh,
         fireCooldown: 0.8 + Math.random() * 0.7,
         strafeDir: Math.random() < 0.5 ? -1 : 1,
         facePlane: null,
         burstLeft: 0, burstCooldown: 0, dodgeCooldown: 0,
         coverTarget: null, retreatMode: false,
-        // Анимация ходьбы
         walkPhase: Math.random() * Math.PI * 2
       };
 
@@ -1497,7 +1435,6 @@
       enemies.push(enemy);
     }
 
-    // Анимация ног/рук врага (лёгкое покачивание при движении)
     function animateEnemyWalk(enemy, dt, speedFactor) {
       if (!enemy.mesh.userData.limbs) return;
       const limbs = enemy.mesh.userData.limbs;
@@ -1505,7 +1442,6 @@
       const amp = 0.22 * speedFactor;
       const s = Math.sin(enemy.walkPhase);
 
-      limbs.armL.position.x = limbs.baseArmL.x;
       limbs.armL.position.z = limbs.baseArmL.z + s * amp * 0.6;
       limbs.armR.position.z = limbs.baseArmR.z - s * amp * 0.6;
       limbs.legL.position.z = limbs.baseLegL.z - s * amp;
@@ -1664,7 +1600,11 @@
           e.burstLeft--;
           e.burstCooldown = 0.14;
 
-          const targetY = EYE_HEIGHT, fromY = e.y + 0.9;
+          // >>> ФИКС: точка выстрела — на уровне груди (центр фигуры),
+          // а не e.y (который теперь центр фигуры), т.к. раньше
+          // в стволе е = y+0.9 приводило к странностям.
+          const targetY = EYE_HEIGHT;
+          const fromY = e.y + 0.2;   // чуть выше центра — уровень плеч
           const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
           const tlen = Math.hypot(tdx, tdy, tdz) || 1;
           const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
@@ -1764,7 +1704,8 @@
           else { mx = -nz * e.strafeDir; mz = nx * e.strafeDir; }
 
           if (e.fireCooldown <= 0 && dist < 48) {
-            const targetY = EYE_HEIGHT, fromY = e.y + 0.9;
+            const targetY = EYE_HEIGHT;
+            const fromY = e.y + 0.2;   // уровень плеч
             const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
             const tlen = Math.hypot(tdx, tdy, tdz) || 1;
             const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
@@ -1789,12 +1730,12 @@
           moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
           animateEnemyWalk(e, dt, 1);
         } else {
-          // runner / brute — просто бегут на игрока
           moveWithCollision(e, nx * e.speed * dt, nz * e.speed * dt);
           animateEnemyWalk(e, dt, 1.2);
         }
 
-        e.mesh.position.set(e.x, e.y, e.z);
+        // >>> ФИКС: меш всегда на земле (y=0), а логический центр в e.y
+        e.mesh.position.set(e.x, 0, e.z);
         e.mesh.rotation.y = Math.atan2(dx, dz);
         updateFacePlaneTransform(e);
 
@@ -1823,10 +1764,12 @@
           for (let j = enemies.length - 1; j >= 0; j--) {
             const e = enemies[j];
             const dh = Math.hypot(b.x - e.x, b.z - e.z);
-            const dy = Math.abs(b.y - (e.y + 0.6));
+            // >>> ФИКС: вертикальная зона попадания — вокруг центра фигуры (e.y),
+            // а радиус взят чуть больше (e.r + 0.6), чтобы пуля не пролетала
+            // над головой/под ногами.
+            const dy = Math.abs(b.y - e.y);
             if (dh < b.r + e.r && dy < e.r + 0.6) {
               e.hp -= b.damage;
-              // >>> Здесь звук попадания зависит от типа врага
               playHitSoundForType(e.type);
               scene.remove(b.mesh);
               bullets.splice(i, 1);
@@ -1938,7 +1881,9 @@
     const _projVec = new THREE.Vector3();
     function drawEnemyHealthBars() {
       for (const e of enemies) {
-        _projVec.set(e.x, e.y + e.r * 0.9 + 1.1, e.z);
+        // Полоска — над головой врага. Голова модели приблизительно
+        // на высоте e.y + 1.0 (центр + длина вверх).
+        _projVec.set(e.x, e.y + 1.3, e.z);
         _projVec.project(camera);
         if (_projVec.z > 1) continue;
         const sx = (_projVec.x * 0.5 + 0.5) * view.cssW;
