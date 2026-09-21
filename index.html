@@ -29,7 +29,6 @@
     }
     #scene { z-index: 1; touch-action: none; }
     #ui { z-index: 2; pointer-events: none; }
-    /* Красный оверлей для эффекта урона */
     #damageOverlay {
       position: fixed;
       inset: 0;
@@ -151,6 +150,8 @@
 
     const BASE_FOV = 75;
     const BASE_ASPECT = 16 / 9;
+    // FOV при прицеливании (чем меньше — тем сильнее зум)
+    const ADS_FOV = 42;
 
     let view = { dpr: 1, cssW: 1, cssH: 1 };
 
@@ -169,15 +170,29 @@
 
       camera.aspect = cssW / cssH;
 
-      const hFov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV) / 2) * BASE_ASPECT);
-      let fov = 2 * Math.atan(Math.tan(hFov / 2) / camera.aspect) * 180 / Math.PI;
-      camera.fov = Math.min(100, Math.max(55, fov));
+      applyFovForAspect();
       camera.updateProjectionMatrix();
 
       uiCanvas.width = Math.floor(cssW * dpr);
       uiCanvas.height = Math.floor(cssH * dpr);
       uiCanvas.style.width = cssW + "px";
       uiCanvas.style.height = cssH + "px";
+    }
+
+    // Хранит текущее "базовое" (не-ADS) значение FOV с учётом
+    // соотношения сторон. При ADS мы поверх него подставляем ADS_FOV.
+    let currentBaseFov = 75;
+    let adsBlend = 0; // 0 = не целимся, 1 = полностью прицелились
+    let isAiming = false;
+
+    function applyFovForAspect() {
+      const hFov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV) / 2) * BASE_ASPECT);
+      let fov = 2 * Math.atan(Math.tan(hFov / 2) / camera.aspect) * 180 / Math.PI;
+      currentBaseFov = Math.min(100, Math.max(55, fov));
+
+      // Итоговый FOV — плавный переход между базовым и ADS
+      camera.fov = currentBaseFov * (1 - adsBlend) + ADS_FOV * adsBlend;
+      camera.updateProjectionMatrix();
     }
 
     window.addEventListener("resize", resize);
@@ -402,6 +417,155 @@
       }
     }
 
+    // ============================================================
+    //  ТЕКСТУРЫ ДЛЯ ВЫПАВШЕГО ОРУЖИЯ
+    // ============================================================
+    //  Каждое оружие имеет свою текстуру — чтобы игрок понимал,
+    //  что поднял, ещё до того как подошёл.
+    // ============================================================
+    function baseWeaponPlate(g, s, bg1, bg2, borderColor) {
+      // Фон с лёгким градиентом
+      const grad = g.createLinearGradient(0, 0, s, s);
+      grad.addColorStop(0, bg1);
+      grad.addColorStop(1, bg2);
+      g.fillStyle = grad;
+      g.fillRect(0, 0, s, s);
+
+      // Металлический шум
+      for (let i = 0; i < 800; i++) {
+        g.fillStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
+        g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
+      }
+      for (let i = 0; i < 800; i++) {
+        g.fillStyle = `rgba(0,0,0,${Math.random() * 0.14})`;
+        g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
+      }
+
+      // Внешняя рамка
+      g.strokeStyle = borderColor;
+      g.lineWidth = 8;
+      g.strokeRect(8, 8, s - 16, s - 16);
+      g.strokeStyle = 'rgba(0,0,0,0.5)';
+      g.lineWidth = 2;
+      g.strokeRect(14, 14, s - 28, s - 28);
+    }
+
+    function drawSmgTexture(g, s) {
+      baseWeaponPlate(g, s, '#ffd54f', '#f9a825', '#4a3400');
+      // Пиктограмма: короткий автомат + крест
+      g.fillStyle = '#1a1a1a';
+      g.fillRect(s * 0.28, s * 0.52, s * 0.44, s * 0.08);
+      g.fillRect(s * 0.55, s * 0.42, s * 0.06, s * 0.10);
+      g.fillRect(s * 0.30, s * 0.58, s * 0.10, s * 0.22); // рукоять
+      g.beginPath();
+      g.arc(s * 0.72, s * 0.36, s * 0.05, 0, Math.PI * 2);
+      g.fill();
+      // Надпись "SMG"
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.13}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('SMG', s * 0.5, s * 0.30);
+    }
+
+    function drawShotgunTexture(g, s) {
+      baseWeaponPlate(g, s, '#ff8a65', '#e64a19', '#4a1c00');
+      // Пиктограмма: два патрона
+      g.fillStyle = '#e53935';
+      g.fillRect(s * 0.30, s * 0.42, s * 0.10, s * 0.30);
+      g.fillRect(s * 0.60, s * 0.42, s * 0.10, s * 0.30);
+      g.fillStyle = '#ffd54f';
+      g.fillRect(s * 0.30, s * 0.66, s * 0.10, s * 0.08);
+      g.fillRect(s * 0.60, s * 0.66, s * 0.10, s * 0.08);
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.13}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('SHOTGUN', s * 0.5, s * 0.28);
+    }
+
+    function drawAssaultTexture(g, s) {
+      baseWeaponPlate(g, s, '#4dd0e1', '#0097a7', '#003d44');
+      // Пиктограмма: длинный автомат + магазин
+      g.fillStyle = '#1a1a1a';
+      g.fillRect(s * 0.20, s * 0.50, s * 0.60, s * 0.07);
+      g.fillRect(s * 0.36, s * 0.57, s * 0.12, s * 0.20); // магазин
+      g.fillRect(s * 0.22, s * 0.40, s * 0.05, s * 0.10); // прицел
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.12}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('ASSAULT', s * 0.5, s * 0.30);
+    }
+
+    function drawSniperTexture(g, s) {
+      baseWeaponPlate(g, s, '#ce93d8', '#8e24aa', '#2a0033');
+      // Пиктограмма: прицел
+      g.strokeStyle = '#1a1a1a';
+      g.lineWidth = s * 0.02;
+      g.beginPath();
+      g.arc(s * 0.5, s * 0.5, s * 0.16, 0, Math.PI * 2);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(s * 0.5, s * 0.26); g.lineTo(s * 0.5, s * 0.42);
+      g.moveTo(s * 0.5, s * 0.58); g.lineTo(s * 0.5, s * 0.74);
+      g.moveTo(s * 0.26, s * 0.5); g.lineTo(s * 0.42, s * 0.5);
+      g.moveTo(s * 0.58, s * 0.5); g.lineTo(s * 0.74, s * 0.5);
+      g.stroke();
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.12}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('SNIPER', s * 0.5, s * 0.24);
+    }
+
+    function drawMinigunTexture(g, s) {
+      baseWeaponPlate(g, s, '#ef9a9a', '#c62828', '#4a0808');
+      // Пиктограмма: три ствола
+      g.fillStyle = '#1a1a1a';
+      g.fillRect(s * 0.32, s * 0.40, s * 0.06, s * 0.34);
+      g.fillRect(s * 0.47, s * 0.40, s * 0.06, s * 0.34);
+      g.fillRect(s * 0.62, s * 0.40, s * 0.06, s * 0.34);
+      g.beginPath();
+      g.arc(s * 0.5, s * 0.74, s * 0.14, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.11}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('MINIGUN', s * 0.5, s * 0.28);
+    }
+
+    function drawRevolverTexture(g, s) {
+      baseWeaponPlate(g, s, '#80cbc4', '#00796b', '#003a35');
+      // Пиктограмма: барабан
+      g.fillStyle = '#1a1a1a';
+      g.beginPath();
+      g.arc(s * 0.5, s * 0.52, s * 0.18, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#bdbdbd';
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2;
+        const cx = s * 0.5 + Math.cos(ang) * s * 0.11;
+        const cy = s * 0.52 + Math.sin(ang) * s * 0.11;
+        g.beginPath();
+        g.arc(cx, cy, s * 0.025, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.fillStyle = '#ffffff';
+      g.font = `bold ${s * 0.11}px Arial`;
+      g.textAlign = 'center';
+      g.fillText('REVOLVER', s * 0.5, s * 0.26);
+    }
+
+    function drawMedkitTexture(g, s) {
+      baseWeaponPlate(g, s, '#81c784', '#2e7d32', '#0d3d13');
+      // Красный крест
+      g.fillStyle = '#e53935';
+      g.fillRect(s * 0.42, s * 0.26, s * 0.16, s * 0.48);
+      g.fillRect(s * 0.26, s * 0.42, s * 0.48, s * 0.16);
+      // Обводка
+      g.strokeStyle = 'rgba(255,255,255,0.7)';
+      g.lineWidth = 4;
+      g.strokeRect(s * 0.42, s * 0.26, s * 0.16, s * 0.48);
+      g.strokeRect(s * 0.26, s * 0.42, s * 0.48, s * 0.16);
+    }
+
     const fieldTex = makeTexture(512, drawField, 10, 6);
     const outerFieldTex = makeTexture(512, drawField, 20, 16);
     const sandbagTex = makeTexture(512, drawSandbag, 1, 1);
@@ -409,6 +573,17 @@
     const craterTex = makeTexture(256, drawCrater, 1, 1);
     const skyTex = makeTexture(1024, drawSky, 1, 1);
     const smokeTex = makeTexture(256, drawSmokeColumn, 1, 1);
+
+    // Текстуры для ящиков с оружием
+    const pickupTextures = {
+      smg:      makeTexture(256, drawSmgTexture),
+      shotgun:  makeTexture(256, drawShotgunTexture),
+      assault:  makeTexture(256, drawAssaultTexture),
+      sniper:   makeTexture(256, drawSniperTexture),
+      minigun:  makeTexture(256, drawMinigunTexture),
+      revolver: makeTexture(256, drawRevolverTexture),
+      medkit:   makeTexture(256, drawMedkitTexture)
+    };
 
     // ============================================================
     //  НЕБО
@@ -758,14 +933,27 @@
     camera.add(weaponGroup);
     scene.add(camera);
 
-    const WEAPON_POS = new THREE.Vector3(0.32, -0.28, -0.5);
-    weaponGroup.position.copy(WEAPON_POS);
+    // Позиция оружия в двух режимах:
+    // hip — обычная (сбоку), ads — прицел (по центру)
+    const WEAPON_POS_HIP = new THREE.Vector3(0.32, -0.28, -0.5);
+    const WEAPON_POS_ADS = new THREE.Vector3(0.0, -0.14, -0.32);
+
+    weaponGroup.position.copy(WEAPON_POS_HIP);
     weaponGroup.rotation.set(0, -0.08, 0.05);
 
     // ============================================================
-    //  ПРЕДЗАГРУЗКА ТЕКСТУРЫ ЛИЦА ВРАГА
+    //  ПРЕДЗАГРУЗКА ТЕКСТУР ЛИЦ ВРАГОВ
     // ============================================================
-    const FACE_IMAGE_PATH = './putin.jpg';
+    //  ⚠️ Имена файлов. Просто положи их рядом с index.html.
+    //     Если файла нет — враг останется без лица (не сломается).
+    //     Можно использовать .jpg, .png, .webp
+    // ============================================================
+    const FACE_IMAGE_PATHS = {
+      runner:    './enemy_runner.jpg',
+      shooter:   './enemy_shooter.jpg',
+      brute:     './enemy_brute.jpg',
+      tactician: './enemy_tactician.jpg'
+    };
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
@@ -783,39 +971,49 @@
       tactician: 0x0e2a0e
     };
 
-    let faceTexture = null;
-    let faceTextureReady = false;
-    let faceTextureFailed = false;
-    let faceAspect = 1;
+    // faceTextures[type] = { tex, aspect } или null
+    const faceTextures = {
+      runner: null,
+      shooter: null,
+      brute: null,
+      tactician: null
+    };
 
     const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
 
-    const textureLoadedPromise = new Promise((resolve) => {
-      textureLoader.load(
-        FACE_IMAGE_PATH,
-        (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-          tex.anisotropy = 4;
-          tex.minFilter = THREE.LinearMipmapLinearFilter;
-          tex.magFilter = THREE.LinearFilter;
-          if (tex.image && tex.image.width && tex.image.height) {
-            faceAspect = tex.image.width / tex.image.height;
+    // Загружаем все текстуры параллельно
+    const faceLoadPromises = [];
+    for (const type in FACE_IMAGE_PATHS) {
+      const p = new Promise((resolve) => {
+        textureLoader.load(
+          FACE_IMAGE_PATHS[type],
+          (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+            tex.anisotropy = 4;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            let aspect = 1;
+            if (tex.image && tex.image.width && tex.image.height) {
+              aspect = tex.image.width / tex.image.height;
+            }
+            faceTextures[type] = { tex, aspect };
+            console.log(`[Masked Merc] Лицо для "${type}" загружено:`, FACE_IMAGE_PATHS[type]);
+            // Догружаем уже заспавненным врагам этого типа
+            for (const e of enemies) {
+              if (e.type === type && !e.facePlane) attachFaceToEnemy(e);
+            }
+            resolve(true);
+          },
+          undefined,
+          (err) => {
+            console.warn(`[Masked Merc] Не удалось загрузить ${FACE_IMAGE_PATHS[type]} для "${type}"`, err);
+            resolve(false);
           }
-          faceTexture = tex;
-          faceTextureReady = true;
-          console.log('[Masked Merc] Текстура врага загружена:', FACE_IMAGE_PATH);
-          for (const e of enemies) attachFaceToEnemy(e);
-          resolve(true);
-        },
-        undefined,
-        (err) => {
-          faceTextureFailed = true;
-          console.warn('[Masked Merc] Не удалось загрузить текстуру врага:', FACE_IMAGE_PATH, err);
-          resolve(false);
-        }
-      );
-    });
+        );
+      });
+      faceLoadPromises.push(p);
+    }
 
     const enemyMats = {
       runner:    new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.runner,    emissive: EMISSIVE_COLORS.runner,    roughness: 0.8 }),
@@ -832,16 +1030,18 @@
     };
 
     function attachFaceToEnemy(enemy) {
-      if (!faceTexture || !enemy) return;
+      if (!enemy) return;
+      const data = faceTextures[enemy.type];
+      if (!data || !data.tex) return;
       if (enemy.facePlane) return;
 
       const r = enemyRadii[enemy.type] || 1.3;
       const h = r * 1.7;
-      const w = h * (faceAspect || 1);
+      const w = h * (data.aspect || 1);
 
       const geo = new THREE.PlaneGeometry(w, h);
       const mat = new THREE.MeshBasicMaterial({
-        map: faceTexture,
+        map: data.tex,
         transparent: true,
         toneMapped: false,
         side: THREE.DoubleSide,
@@ -883,15 +1083,18 @@
     const enemyTracerMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
     const tacticianTracerMat = new THREE.MeshBasicMaterial({ color: 0x66ffaa });
 
+    // Ящик с оружием — используем разные текстуры для разных типов
     const pickupGeo = new THREE.BoxGeometry(2.2, 0.9, 1.4);
+
+    // Emissive-материалы для свечения в темноте (оттенки под цвет текстуры)
     const pickupMats = {
-      smg:      new THREE.MeshStandardMaterial({ color: 0xffc107, emissive: 0x4a3400, roughness: 0.5 }),
-      shotgun:  new THREE.MeshStandardMaterial({ color: 0xff7043, emissive: 0x4a1c00, roughness: 0.5 }),
-      assault:  new THREE.MeshStandardMaterial({ color: 0x26c6da, emissive: 0x003d44, roughness: 0.5 }),
-      sniper:   new THREE.MeshStandardMaterial({ color: 0xab47bc, emissive: 0x2a0033, roughness: 0.5 }),
-      minigun:  new THREE.MeshStandardMaterial({ color: 0xef5350, emissive: 0x4a0808, roughness: 0.5 }),
-      revolver: new THREE.MeshStandardMaterial({ color: 0x26a69a, emissive: 0x003a35, roughness: 0.5 }),
-      medkit:   new THREE.MeshStandardMaterial({ color: 0x4caf50, emissive: 0x0d3d13, roughness: 0.5 })
+      smg:      new THREE.MeshStandardMaterial({ map: pickupTextures.smg,      emissive: 0x4a3400, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      shotgun:  new THREE.MeshStandardMaterial({ map: pickupTextures.shotgun,  emissive: 0x4a1c00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      assault:  new THREE.MeshStandardMaterial({ map: pickupTextures.assault,  emissive: 0x003d44, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      sniper:   new THREE.MeshStandardMaterial({ map: pickupTextures.sniper,   emissive: 0x2a0033, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      minigun:  new THREE.MeshStandardMaterial({ map: pickupTextures.minigun,  emissive: 0x4a0808, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      revolver: new THREE.MeshStandardMaterial({ map: pickupTextures.revolver, emissive: 0x003a35, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
+      medkit:   new THREE.MeshStandardMaterial({ map: pickupTextures.medkit,   emissive: 0x0d3d13, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 })
     };
 
     const weaponIndexByType = {
@@ -914,7 +1117,7 @@
     ];
 
     // ============================================================
-    //  ЗВУКИ — ПУЛЫ
+    //  ЗВУКИ
     // ============================================================
     const SOUNDS = {
       hit:   { path: './dvigj.mp3', volume: 0.6, poolSize: 6 },
@@ -978,24 +1181,17 @@
     // ============================================================
     //  ЭФФЕКТ УРОНА — КРАСНЫЙ ЭКРАН + ТРЕЩИНЫ
     // ============================================================
-    //  damageLevel: 0..1, плавно растёт при уроне и спадает за 4 сек.
-    //  cracks[]    — список трещин в экранных координатах (css-пиксели),
-    //                каждая со своим временем жизни (ttl).
-    // ============================================================
-    const DAMAGE_DECAY_TIME = 4.0;    // за сколько секунд без урона полностью проходит
-    const CRACK_TTL = 4.0;            // время жизни одной трещины
+    const DAMAGE_DECAY_TIME = 4.0;
+    const CRACK_TTL = 4.0;
     let damageLevel = 0;
     let timeSinceDamage = 999;
     const cracks = [];
 
-    // Событие получения урона: усиливает красноту, добавляет трещины
     function onPlayerDamaged(amount, hitWorldX, hitWorldZ) {
-      // Уровень красноты растёт нелинейно (сильный удар — резкий всплеск)
       const add = Math.min(0.7, amount / 45);
       damageLevel = Math.min(1, damageLevel + add + 0.15);
       timeSinceDamage = 0;
 
-      // Проецируем место попадания на экран (если переданы координаты)
       let sx = view.cssW * (0.3 + Math.random() * 0.4);
       let sy = view.cssH * (0.3 + Math.random() * 0.4);
 
@@ -1008,7 +1204,6 @@
         }
       }
 
-      // Создаём 2–4 ветвящиеся трещины из точки попадания
       const branchCount = 2 + Math.floor(Math.random() * 3);
       for (let b = 0; b < branchCount; b++) {
         const branches = [];
@@ -1035,17 +1230,14 @@
     function updateDamageEffect(dt) {
       timeSinceDamage += dt;
       if (timeSinceDamage > 0.2) {
-        // Плавное затухание: за DAMAGE_DECAY_TIME секунд должно упасть до 0
         damageLevel = Math.max(0, damageLevel - dt / DAMAGE_DECAY_TIME * 1.3);
       }
 
-      // Трещины живут CRACK_TTL секунд
       for (let i = cracks.length - 1; i >= 0; i--) {
         cracks[i].ttl -= dt;
         if (cracks[i].ttl <= 0) cracks.splice(i, 1);
       }
 
-      // Обновляем HTML-оверлей
       if (damageLevel > 0.001) {
         damageOverlay.style.opacity = String(damageLevel * 0.85);
       } else {
@@ -1061,12 +1253,10 @@
       ctx.lineJoin = 'round';
 
       for (const crack of cracks) {
-        const lifeRatio = crack.ttl / crack.maxTtl;   // 1 → 0
-        // Альфа-канал: сначала яркие, потом тускнеют
+        const lifeRatio = crack.ttl / crack.maxTtl;
         const alpha = Math.min(1, lifeRatio * 1.5) * 0.9;
 
         for (let pass = 0; pass < 2; pass++) {
-          // pass 0 — тёмный контур, pass 1 — светлая сердцевина
           if (pass === 0) {
             ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
             ctx.lineWidth = 4;
@@ -1077,7 +1267,6 @@
 
           for (const [x1, y1, x2, y2] of crack.branches) {
             ctx.beginPath();
-            // Небольшой "излом" для естественности
             const mx = (x1 + x2) / 2 + (Math.sin(crack.seed + x1) * 6);
             const my = (y1 + y2) / 2 + (Math.cos(crack.seed + y1) * 6);
             ctx.moveTo(x1, y1);
@@ -1100,9 +1289,6 @@
 
     const EYE_HEIGHT = 2.1;
 
-    // ============================================================
-    //  ПРЫЖОК
-    // ============================================================
     const JUMP_HEIGHT = 4;
     const JUMP_GRAVITY = 7;
     const JUMP_VELOCITY = Math.sqrt(2 * JUMP_GRAVITY * JUMP_HEIGHT);
@@ -1237,7 +1423,6 @@
     function spawnEnemy() {
       let type = "runner";
       const roll = Math.random();
-      // Тактик появляется с 4-й волны, шанс 22%
       if (wave >= 4 && roll < 0.22) type = "tactician";
       else if (wave >= 3 && roll < 0.40) type = "brute";
       else if (wave >= 2 && roll < 0.65) type = "shooter";
@@ -1277,12 +1462,11 @@
         fireCooldown: 0.8 + Math.random() * 0.7,
         strafeDir: Math.random() < 0.5 ? -1 : 1,
         facePlane: null,
-        // Специфичные для тактика поля
-        burstLeft: 0,           // осталось выстрелов в очереди
-        burstCooldown: 0,       // пауза внутри очереди
-        dodgeCooldown: 0,       // время до следующего уклонения
-        coverTarget: null,      // ближайшее укрытие для отступления
-        retreatMode: false      // если HP < 40% — отступает
+        burstLeft: 0,
+        burstCooldown: 0,
+        dodgeCooldown: 0,
+        coverTarget: null,
+        retreatMode: false
       };
 
       attachFaceToEnemy(enemy);
@@ -1308,11 +1492,14 @@
       const muzzlePos = new THREE.Vector3();
       gunBarrel.getWorldPosition(muzzlePos);
 
+      // При прицеливании разброс уменьшается
+      const spreadMul = isAiming ? 0.35 : 1;
+
       for (let i = 0; i < weapon.pellets; i++) {
         const bulletDir = direction.clone();
-        bulletDir.x += (Math.random() - 0.5) * weapon.spread;
-        bulletDir.y += (Math.random() - 0.5) * weapon.spread;
-        bulletDir.z += (Math.random() - 0.5) * weapon.spread;
+        bulletDir.x += (Math.random() - 0.5) * weapon.spread * spreadMul;
+        bulletDir.y += (Math.random() - 0.5) * weapon.spread * spreadMul;
+        bulletDir.z += (Math.random() - 0.5) * weapon.spread * spreadMul;
         bulletDir.normalize();
 
         const mesh = new THREE.Mesh(tracerGeo, friendlyTracerMat);
@@ -1353,38 +1540,27 @@
 
     const mouseLookAccum = { x: 0, y: 0 };
 
-    // ============================================================
-    //  ЛОГИКА ТАКТИКА
-    // ============================================================
-    //  Ищет ближайшее укрытие к игроку и возвращает точку за ним
-    //  (чтобы тактик отошёл так, что между ним и игроком встанет
-    //  препятствие).
     function findCoverPoint(enemy) {
       let best = null;
       let bestScore = Infinity;
 
       for (const o of obstacles) {
-        // Ищем только "большие" укрытия
         if (o.w < 3 || o.d < 3) continue;
 
-        // Точка позади препятствия относительно игрока
         const toEnemyX = enemy.x - o.x;
         const toEnemyZ = enemy.z - o.z;
         const len = Math.hypot(toEnemyX, toEnemyZ) || 1;
         const dirX = toEnemyX / len, dirZ = toEnemyZ / len;
 
-        // Позиция за укрытием — на 1.5× максимальной полуширины
         const coverDist = Math.max(o.w, o.d) * 0.7 + 2;
         const tx = o.x + dirX * coverDist;
         const tz = o.z + dirZ * coverDist;
 
         if (hitsObstacleOrBounds(tx, tz, enemy.r)) continue;
 
-        // Не слишком далеко от тактика
         const d = Math.hypot(tx - enemy.x, tz - enemy.z);
         if (d > 22) continue;
 
-        // Считаем, реально ли укрытие от игрока? Проверим середину
         const midX = (tx + player.x) / 2;
         const midZ = (tz + player.z) / 2;
         let covered = false;
@@ -1403,19 +1579,13 @@
     }
 
     function updateTactician(e, dt, dist, nx, nz) {
-      // Инициализация кулдаунов
       e.dodgeCooldown -= dt;
       e.burstCooldown -= dt;
 
-      // Режим отступления при низком HP
       e.retreatMode = e.hp / e.maxHp < 0.4;
 
       let mx = 0, mz = 0;
 
-      // ============================================================
-      //  УКЛОНЕНИЕ ОТ ПУЛЬ ИГРОКА
-      // ============================================================
-      //  Ищем вражеские (для тактика) пули рядом и уходим в сторону
       let dodging = false;
       if (e.dodgeCooldown <= 0) {
         for (const b of bullets) {
@@ -1423,13 +1593,10 @@
           const dxB = e.x - b.x, dzB = e.z - b.z;
           const distB = Math.hypot(dxB, dzB);
           if (distB > 8) continue;
-          // Пуля летит в нашу сторону?
           const dot = (b.vx * (e.x - b.x) + b.vz * (e.z - b.z));
           if (dot <= 0) continue;
-          // Уходим перпендикулярно направлению пули
           const bDirLen = Math.hypot(b.vx, b.vz) || 1;
           const ux = b.vx / bDirLen, uz = b.vz / bDirLen;
-          // Перпендикуляр (два варианта — выбираем в сторону от пули)
           const perpX = -uz, perpZ = ux;
           const sideTest = perpX * dxB + perpZ * dzB;
           const sgn = sideTest >= 0 ? 1 : -1;
@@ -1442,11 +1609,7 @@
       }
 
       if (!dodging) {
-        // ============================================================
-        //  ПОЗИЦИОНИРОВАНИЕ
-        // ============================================================
         if (e.retreatMode) {
-          // Ищем укрытие и бежим к нему, либо просто отступаем
           if (!e.coverTarget || Math.hypot(e.coverTarget.x - e.x, e.coverTarget.z - e.z) < 2) {
             e.coverTarget = findCoverPoint(e);
           }
@@ -1459,41 +1622,31 @@
             mx = -nx; mz = -nz;
           }
         } else {
-          // Держим дистанцию 20–26 м
           if (dist > 26) { mx = nx; mz = nz; }
           else if (dist < 20) { mx = -nx; mz = -nz; }
           else {
-            // Круговое движение (страйф) вокруг игрока
             mx = -nz * e.strafeDir;
             mz = nx * e.strafeDir;
-            // Иногда меняем сторону
             if (Math.random() < dt * 0.5) e.strafeDir *= -1;
           }
         }
 
-        // Небольшое боковое смещение, чтобы не стоять в линию
         mx += (Math.random() - 0.5) * 0.3;
         mz += (Math.random() - 0.5) * 0.3;
       }
 
-      // Нормализуем
       const ml = Math.hypot(mx, mz);
       if (ml > 0.01) { mx /= ml; mz /= ml; }
 
       moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
 
-      // ============================================================
-      //  СТРЕЛЬБА ОЧЕРЕДЯМИ
-      // ============================================================
       if (dist < 45 && !e.retreatMode) {
-        // Старт новой очереди
         if (e.burstLeft === 0 && e.fireCooldown <= 0) {
-          e.burstLeft = 3 + Math.floor(Math.random() * 3); // 3–5 выстрелов
+          e.burstLeft = 3 + Math.floor(Math.random() * 3);
           e.burstCooldown = 0;
-          e.fireCooldown = 2.0 + Math.random() * 1.5;      // пауза между очередями
+          e.fireCooldown = 2.0 + Math.random() * 1.5;
         }
 
-        // Стреляем внутри очереди
         if (e.burstLeft > 0 && e.burstCooldown <= 0) {
           e.burstLeft--;
           e.burstCooldown = 0.14;
@@ -1503,7 +1656,6 @@
           const tlen = Math.hypot(tdx, tdy, tdz) || 1;
           const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
 
-          // Тактик точнее обычного стрелка
           dir.x += (Math.random() - 0.5) * 0.04;
           dir.y += (Math.random() - 0.5) * 0.04;
           dir.z += (Math.random() - 0.5) * 0.04;
@@ -1529,6 +1681,14 @@
 
       updateDamageEffect(dt);
 
+      // ---- Прицеливание ----
+      // Целевое значение adsBlend
+      const adsTarget = isAiming ? 1 : 0;
+      // Плавное приближение (dt * 8 = примерно 0.125 сек до полного перехода)
+      adsBlend += (adsTarget - adsBlend) * Math.min(1, dt * 8);
+      camera.fov = currentBaseFov * (1 - adsBlend) + ADS_FOV * adsBlend;
+      camera.updateProjectionMatrix();
+
       if (player.jumping) {
         player.jumpVel -= JUMP_GRAVITY * dt;
         player.jumpOffset += player.jumpVel * dt;
@@ -1540,8 +1700,10 @@
       }
 
       if (mouseLookAccum.x !== 0 || mouseLookAccum.y !== 0) {
-        player.yaw -= mouseLookAccum.x * LOOK_SENS_MOUSE;
-        player.pitch -= mouseLookAccum.y * LOOK_SENS_MOUSE;
+        // При прицеливании чувствительность чуть ниже
+        const sensMul = 1 - adsBlend * 0.5;
+        player.yaw -= mouseLookAccum.x * LOOK_SENS_MOUSE * sensMul;
+        player.pitch -= mouseLookAccum.y * LOOK_SENS_MOUSE * sensMul;
         clampPitch();
         mouseLookAccum.x = 0; mouseLookAccum.y = 0;
       }
@@ -1624,7 +1786,6 @@
 
           moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
         } else {
-          // runner / brute — просто бегут на игрока
           moveWithCollision(e, nx * e.speed * dt, nz * e.speed * dt);
         }
 
@@ -1756,14 +1917,22 @@
 
       const jumpDip = player.jumpOffset * 0.12;
 
+      // Плавный переход между hip- и ADS-позициями оружия
+      const bx = (WEAPON_POS_HIP.x + bobX) * (1 - adsBlend) + WEAPON_POS_ADS.x * adsBlend;
+      const by = (WEAPON_POS_HIP.y + bobY) * (1 - adsBlend) + WEAPON_POS_ADS.y * adsBlend;
+      const bz = WEAPON_POS_HIP.z * (1 - adsBlend) + WEAPON_POS_ADS.z * adsBlend;
+
+      // При прицеливании покачивание уменьшается
+      const bobMul = (1 - adsBlend * 0.85);
+
       weaponGroup.scale.setScalar(fovScale);
       weaponGroup.position.set(
-        (WEAPON_POS.x + bobX) * fovScale,
-        (WEAPON_POS.y + bobY) * fovScale - jumpDip,
-        WEAPON_POS.z + weaponRecoil
+        bx * fovScale,
+        by * fovScale - jumpDip,
+        bz + weaponRecoil
       );
       weaponGroup.rotation.x = -weaponRecoil * 2.5;
-      weaponGroup.rotation.y = -bobX * 0.5;
+      weaponGroup.rotation.y = -bobX * 0.5 * bobMul;
 
       if (player.invuln > 0) {
         const shake = player.invuln * 0.08;
@@ -1796,7 +1965,6 @@
         ctx.fillStyle = "rgba(0,0,0,0.72)";
         ctx.fillRect(x - 1, y - 1, barW + 2, barH + 2);
 
-        // Тактик — с зелёной рамкой, чтобы выделить
         if (e.type === "tactician") {
           ctx.fillStyle = `hsl(${140 + hpRatio * 40}, 80%, ${40 + hpRatio * 20}%)`;
         } else {
@@ -1835,12 +2003,12 @@
       ctx.fillRect(barX, barY, barW * hpRatio, barH);
 
       drawEnemyHealthBars();
-
-      // Трещины рисуем поверх сцены, но под прицелом
       drawCracks();
 
+      // Прицел: при ADS немного уменьшается, чтобы не мешать
       const cx = view.cssW / 2, cy = view.cssH / 2;
-      const gap = 6, length = 12, thickness = 2;
+      const scale = 1 - adsBlend * 0.45;
+      const gap = 6 * scale, length = 12 * scale, thickness = 2;
       ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
       ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
       ctx.lineWidth = 1;
@@ -1921,8 +2089,9 @@
            "Кнопка ОГОНЬ — стрельба, ПРЫЖОК — прыжок",
            "Кнопка ⏸ вверху справа — пауза"]
         : ["WASD — движение, ПРОБЕЛ — прыжок",
+           "ЛКМ — стрельба, ПКМ — прицеливание",
            "Мышь — обзор (кликните для захвата курсора)",
-           "ЛКМ — стрельба, ESC — пауза / освободить курсор"];
+           "ESC — пауза / освободить курсор"];
       lines.forEach((line, i) => ctx.fillText(line, view.cssW / 2, view.cssH * 0.44 + textSize * 1.7 * i));
       ctx.fillStyle = "#ffd76a";
       ctx.fillText("Коснись или кликни, чтобы начать", view.cssW / 2, view.cssH * 0.84);
@@ -2031,6 +2200,7 @@
       if (state === "playing") {
         state = "paused";
         mouseDown = false;
+        isAiming = false;
         touch.fireBtnDown = false;
         touch.moveId = null;
         touch.lookId = null;
@@ -2075,15 +2245,29 @@
     });
 
     sceneCanvas.addEventListener("mousedown", (e) => {
+      // ЛКМ — стрельба
       if (e.button === 0) {
         mouseDown = true;
         if (state !== "playing") {
           if (state === "menu" || state === "gameover") startGame();
         }
       }
+      // ПКМ — прицеливание
+      if (e.button === 2) {
+        isAiming = true;
+        if (state === "menu" || state === "gameover") startGame();
+      }
     });
 
-    window.addEventListener("mouseup", (e) => { if (e.button === 0) mouseDown = false; });
+    window.addEventListener("mouseup", (e) => {
+      if (e.button === 0) mouseDown = false;
+      if (e.button === 2) isAiming = false;
+    });
+
+    // Не даём браузеру открыть контекстное меню по ПКМ на игровом поле
+    sceneCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    // При потере фокуса окна выключаем прицеливание (иначе залипнет)
+    window.addEventListener("blur", () => { isAiming = false; mouseDown = false; });
 
     fireBtn.addEventListener("pointerdown", (e) => {
       e.preventDefault(); 
@@ -2180,7 +2364,6 @@
     });
 
     window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
-    sceneCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
     updateFullscreenButton();
     updatePauseButton();
