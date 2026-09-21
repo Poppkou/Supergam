@@ -889,55 +889,77 @@
     ];
 
     // ============================================================
-    //  ЗВУК ПОПАДАНИЯ (dvigj.mp3)
+    //  ЗВУКИ — ПУЛЫ (попадание по врагу / попадание по игроку / выстрел)
     // ============================================================
-    //  Пул из нескольких Audio-объектов: пока один играет, можно
-    //  запустить следующий — дробовик (7 дробин) не «затирает»
-    //  звук, работает как счётчик попаданий.
+    //  Каждый звук имеет свой независимый пул экземпляров, чтобы
+    //  одновременные срабатывания (выстрел + попадание + получение
+    //  урона) не затирали друг друга.
+    //
+    //  ⚠️ Имена файлов должны лежать рядом с index.html:
+    //     dvigj.mp3 — попадание по врагу
+    //     hurt.mp3  — попадание по игроку
+    //     shoot.mp3 — выстрел из оружия
     // ============================================================
-    const HIT_SOUND_PATH = './dvigj.mp3';   // ← имя твоего файла
-    const HIT_SOUND_VOLUME = 0.6;
-    const HIT_SOUND_POOL_SIZE = 6;
+    const SOUNDS = {
+      hit:   { path: './dvigj.mp3', volume: 0.6, poolSize: 6 },
+      hurt:  { path: './hurt.mp3',  volume: 0.7, poolSize: 3 },
+      shoot: { path: './shoot.mp3', volume: 0.5, poolSize: 4 }
+    };
 
-    const hitSoundPool = [];
-    let hitSoundIndex = 0;
+    const soundPools = {};
     let audioUnlocked = false;
 
-    for (let i = 0; i < HIT_SOUND_POOL_SIZE; i++) {
-      const a = new Audio(HIT_SOUND_PATH);
-      a.preload = 'auto';
-      a.volume = HIT_SOUND_VOLUME;
-      hitSoundPool.push(a);
+    for (const name in SOUNDS) {
+      const cfg = SOUNDS[name];
+      const pool = [];
+      for (let i = 0; i < cfg.poolSize; i++) {
+        const a = new Audio(cfg.path);
+        a.preload = 'auto';
+        a.volume = cfg.volume;
+        pool.push(a);
+      }
+      soundPools[name] = { pool, index: 0, volume: cfg.volume };
     }
 
+    // Браузеры не дают играть звук до первого действия пользователя.
+    // Запускаем все пулы на нулевой громкости, чтобы "разблокировать".
     function unlockAudio() {
       if (audioUnlocked) return;
       audioUnlocked = true;
-      for (const a of hitSoundPool) {
-        try {
-          a.volume = 0;
-          const p = a.play();
-          const reset = () => {
-            a.pause();
-            a.currentTime = 0;
-            a.volume = HIT_SOUND_VOLUME;
-          };
-          if (p && p.then) p.then(reset).catch(reset);
-          else reset();
-        } catch (e) {}
+      for (const name in soundPools) {
+        const sp = soundPools[name];
+        for (const a of sp.pool) {
+          try {
+            a.volume = 0;
+            const p = a.play();
+            const reset = () => {
+              a.pause();
+              a.currentTime = 0;
+              a.volume = sp.volume;
+            };
+            if (p && p.then) p.then(reset).catch(reset);
+            else reset();
+          } catch (e) {}
+        }
       }
     }
 
-    function playHitSound() {
+    function playSound(name) {
       if (!audioUnlocked) return;
-      const a = hitSoundPool[hitSoundIndex];
-      hitSoundIndex = (hitSoundIndex + 1) % HIT_SOUND_POOL_SIZE;
+      const sp = soundPools[name];
+      if (!sp) return;
+      const a = sp.pool[sp.index];
+      sp.index = (sp.index + 1) % sp.pool.length;
       try {
         a.currentTime = 0;
         const p = a.play();
         if (p && p.catch) p.catch(() => {});
       } catch (e) {}
     }
+
+    function playHitSound()   { playSound('hit'); }
+    function playHurtSound()  { playSound('hurt'); }
+    function playShootSound() { playSound('shoot'); }
 
     let state = "menu";
     let globalTime = 0;
@@ -952,8 +974,8 @@
     // ============================================================
     //  ПРЫЖОК — ВЫСОКИЙ И «ЛУННЫЙ»
     // ============================================================
-    const JUMP_HEIGHT = 4;    // высота подъёма камеры
-    const JUMP_GRAVITY = 9;   // сила притяжения
+    const JUMP_HEIGHT = 4;
+    const JUMP_GRAVITY = 7;
     const JUMP_VELOCITY = Math.sqrt(2 * JUMP_GRAVITY * JUMP_HEIGHT);
 
     const player = {
@@ -1134,6 +1156,8 @@
       const weapon = weapons[player.weapon];
       player.fireCooldown = weapon.fireDelay;
 
+      playShootSound();          // ← звук выстрела
+
       const direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
 
@@ -1289,6 +1313,7 @@
 
         if (dist < e.r + player.r + 0.3 && player.invuln <= 0) {
           player.hp -= e.damage;
+          playHurtSound();               // ← звук тарана от врага
           player.invuln = 0.7;
           moveWithCollision(player, nx * 1.8, nz * 1.8);
         }
@@ -1315,7 +1340,7 @@
             const dy = Math.abs(b.y - e.y);
             if (dh < b.r + e.r && dy < e.y + 0.8) {
               e.hp -= b.damage;
-              playHitSound();               // ← звук попадания во врага
+              playHitSound();               // ← звук попадания по врагу
               scene.remove(b.mesh);
               bullets.splice(i, 1);
               removed = true;
@@ -1334,6 +1359,7 @@
           const dy = Math.abs(b.y - EYE_HEIGHT);
           if (dh < b.r + player.r + 0.3 && dy < 1.4 && player.invuln <= 0) {
             player.hp -= b.damage;
+            playHurtSound();               // ← звук попадания по игроку
             player.invuln = 0.45;
             scene.remove(b.mesh);
             bullets.splice(i, 1);
@@ -1405,7 +1431,6 @@
         Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5) /
         Math.tan(THREE.MathUtils.degToRad(BASE_FOV) * 0.5);
 
-      // В высоком прыжке оружие немного "проваливается" — эффект свободного падения
       const jumpDip = player.jumpOffset * 0.12;
 
       weaponGroup.scale.setScalar(fovScale);
