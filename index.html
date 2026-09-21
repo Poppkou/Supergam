@@ -150,7 +150,6 @@
 
     const BASE_FOV = 75;
     const BASE_ASPECT = 16 / 9;
-    // FOV при прицеливании (чем меньше — тем сильнее зум)
     const ADS_FOV = 42;
 
     let view = { dpr: 1, cssW: 1, cssH: 1 };
@@ -179,18 +178,14 @@
       uiCanvas.style.height = cssH + "px";
     }
 
-    // Хранит текущее "базовое" (не-ADS) значение FOV с учётом
-    // соотношения сторон. При ADS мы поверх него подставляем ADS_FOV.
     let currentBaseFov = 75;
-    let adsBlend = 0; // 0 = не целимся, 1 = полностью прицелились
+    let adsBlend = 0;
     let isAiming = false;
 
     function applyFovForAspect() {
       const hFov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV) / 2) * BASE_ASPECT);
       let fov = 2 * Math.atan(Math.tan(hFov / 2) / camera.aspect) * 180 / Math.PI;
       currentBaseFov = Math.min(100, Math.max(55, fov));
-
-      // Итоговый FOV — плавный переход между базовым и ADS
       camera.fov = currentBaseFov * (1 - adsBlend) + ADS_FOV * adsBlend;
       camera.updateProjectionMatrix();
     }
@@ -420,18 +415,13 @@
     // ============================================================
     //  ТЕКСТУРЫ ДЛЯ ВЫПАВШЕГО ОРУЖИЯ
     // ============================================================
-    //  Каждое оружие имеет свою текстуру — чтобы игрок понимал,
-    //  что поднял, ещё до того как подошёл.
-    // ============================================================
     function baseWeaponPlate(g, s, bg1, bg2, borderColor) {
-      // Фон с лёгким градиентом
       const grad = g.createLinearGradient(0, 0, s, s);
       grad.addColorStop(0, bg1);
       grad.addColorStop(1, bg2);
       g.fillStyle = grad;
       g.fillRect(0, 0, s, s);
 
-      // Металлический шум
       for (let i = 0; i < 800; i++) {
         g.fillStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
         g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
@@ -441,7 +431,6 @@
         g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
       }
 
-      // Внешняя рамка
       g.strokeStyle = borderColor;
       g.lineWidth = 8;
       g.strokeRect(8, 8, s - 16, s - 16);
@@ -452,15 +441,13 @@
 
     function drawSmgTexture(g, s) {
       baseWeaponPlate(g, s, '#ffd54f', '#f9a825', '#4a3400');
-      // Пиктограмма: короткий автомат + крест
       g.fillStyle = '#1a1a1a';
       g.fillRect(s * 0.28, s * 0.52, s * 0.44, s * 0.08);
       g.fillRect(s * 0.55, s * 0.42, s * 0.06, s * 0.10);
-      g.fillRect(s * 0.30, s * 0.58, s * 0.10, s * 0.22); // рукоять
+      g.fillRect(s * 0.30, s * 0.58, s * 0.10, s * 0.22);
       g.beginPath();
       g.arc(s * 0.72, s * 0.36, s * 0.05, 0, Math.PI * 2);
       g.fill();
-      // Надпись "SMG"
       g.fillStyle = '#ffffff';
       g.font = `bold ${s * 0.13}px Arial`;
       g.textAlign = 'center';
@@ -469,7 +456,6 @@
 
     function drawShotgunTexture(g, s) {
       baseWeaponPlate(g, s, '#ff8a65', '#e64a19', '#4a1c00');
-      // Пиктограмма: два патрона
       g.fillStyle = '#e53935';
       g.fillRect(s * 0.30, s * 0.42, s * 0.10, s * 0.30);
       g.fillRect(s * 0.60, s * 0.42, s * 0.10, s * 0.30);
@@ -484,11 +470,10 @@
 
     function drawAssaultTexture(g, s) {
       baseWeaponPlate(g, s, '#4dd0e1', '#0097a7', '#003d44');
-      // Пиктограмма: длинный автомат + магазин
       g.fillStyle = '#1a1a1a';
       g.fillRect(s * 0.20, s * 0.50, s * 0.60, s * 0.07);
-      g.fillRect(s * 0.36, s * 0.57, s * 0.12, s * 0.20); // магазин
-      g.fillRect(s * 0.22, s * 0.40, s * 0.05, s * 0.10); // прицел
+      g.fillRect(s * 0.36, s * 0.57, s * 0.12, s * 0.20);
+      g.fillRect(s * 0.22, s * 0.40, s * 0.05, s * 0.10);
       g.fillStyle = '#ffffff';
       g.font = `bold ${s * 0.12}px Arial`;
       g.textAlign = 'center';
@@ -497,7 +482,6 @@
 
     function drawSniperTexture(g, s) {
       baseWeaponPlate(g, s, '#ce93d8', '#8e24aa', '#2a0033');
-      // Пиктограмма: прицел
       g.strokeStyle = '#1a1a1a';
       g.lineWidth = s * 0.02;
       g.beginPath();
@@ -517,7 +501,6 @@
 
     function drawMinigunTexture(g, s) {
       baseWeaponPlate(g, s, '#ef9a9a', '#c62828', '#4a0808');
-      // Пиктограмма: три ствола
       g.fillStyle = '#1a1a1a';
       g.fillRect(s * 0.32, s * 0.40, s * 0.06, s * 0.34);
       g.fillRect(s * 0.47, s * 0.40, s * 0.06, s * 0.34);
@@ -533,7 +516,6 @@
 
     function drawRevolverTexture(g, s) {
       baseWeaponPlate(g, s, '#80cbc4', '#00796b', '#003a35');
-      // Пиктограмма: барабан
       g.fillStyle = '#1a1a1a';
       g.beginPath();
       g.arc(s * 0.5, s * 0.52, s * 0.18, 0, Math.PI * 2);
@@ -555,11 +537,9 @@
 
     function drawMedkitTexture(g, s) {
       baseWeaponPlate(g, s, '#81c784', '#2e7d32', '#0d3d13');
-      // Красный крест
       g.fillStyle = '#e53935';
       g.fillRect(s * 0.42, s * 0.26, s * 0.16, s * 0.48);
       g.fillRect(s * 0.26, s * 0.42, s * 0.48, s * 0.16);
-      // Обводка
       g.strokeStyle = 'rgba(255,255,255,0.7)';
       g.lineWidth = 4;
       g.strokeRect(s * 0.42, s * 0.26, s * 0.16, s * 0.48);
@@ -574,7 +554,6 @@
     const skyTex = makeTexture(1024, drawSky, 1, 1);
     const smokeTex = makeTexture(256, drawSmokeColumn, 1, 1);
 
-    // Текстуры для ящиков с оружием
     const pickupTextures = {
       smg:      makeTexture(256, drawSmgTexture),
       shotgun:  makeTexture(256, drawShotgunTexture),
@@ -933,8 +912,6 @@
     camera.add(weaponGroup);
     scene.add(camera);
 
-    // Позиция оружия в двух режимах:
-    // hip — обычная (сбоку), ads — прицел (по центру)
     const WEAPON_POS_HIP = new THREE.Vector3(0.32, -0.28, -0.5);
     const WEAPON_POS_ADS = new THREE.Vector3(0.0, -0.14, -0.32);
 
@@ -942,13 +919,23 @@
     weaponGroup.rotation.set(0, -0.08, 0.05);
 
     // ============================================================
-    //  ПРЕДЗАГРУЗКА ТЕКСТУР ЛИЦ ВРАГОВ
+    //  ТЕКСТУРЫ ЛИЦ ВРАГОВ — С FALLBACK НА putin.jpg
     // ============================================================
-    //  ⚠️ Имена файлов. Просто положи их рядом с index.html.
-    //     Если файла нет — враг останется без лица (не сломается).
-    //     Можно использовать .jpg, .png, .webp
+    //  По умолчанию ВСЕ типы врагов используют ОДНУ картинку
+    //  ./putin.jpg — точно как было раньше.
+    //
+    //  Хочешь уникальную картинку для конкретного типа — просто
+    //  положи рядом файл с одним из имён ниже. Игра сама его
+    //  подхватит. Если файла нет — откат на putin.jpg.
+    //
+    //  Опциональные замены:
+    //    ./enemy_runner.jpg       — только для бегунов
+    //    ./enemy_shooter.jpg      — только для стрелков
+    //    ./enemy_brute.jpg        — только для бугаёв
+    //    ./enemy_tactician.jpg    — только для тактиков
     // ============================================================
-    const FACE_IMAGE_PATHS = {
+    const FACE_IMAGE_DEFAULT = './putin.jpg';
+    const FACE_IMAGE_OVERRIDES = {
       runner:    './enemy_runner.jpg',
       shooter:   './enemy_shooter.jpg',
       brute:     './enemy_brute.jpg',
@@ -971,22 +958,17 @@
       tactician: 0x0e2a0e
     };
 
-    // faceTextures[type] = { tex, aspect } или null
-    const faceTextures = {
-      runner: null,
-      shooter: null,
-      brute: null,
-      tactician: null
-    };
+    // Общая базовая текстура (грузится всегда)
+    let defaultFaceData = null; // { tex, aspect }
 
-    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
+    // Кэш загруженных текстур по пути
+    const textureCache = {}; // path -> Promise<{tex, aspect} | null>
 
-    // Загружаем все текстуры параллельно
-    const faceLoadPromises = [];
-    for (const type in FACE_IMAGE_PATHS) {
+    function loadFaceTexture(path) {
+      if (textureCache[path]) return textureCache[path];
       const p = new Promise((resolve) => {
         textureLoader.load(
-          FACE_IMAGE_PATHS[type],
+          path,
           (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -997,22 +979,68 @@
             if (tex.image && tex.image.width && tex.image.height) {
               aspect = tex.image.width / tex.image.height;
             }
-            faceTextures[type] = { tex, aspect };
-            console.log(`[Masked Merc] Лицо для "${type}" загружено:`, FACE_IMAGE_PATHS[type]);
-            // Догружаем уже заспавненным врагам этого типа
-            for (const e of enemies) {
-              if (e.type === type && !e.facePlane) attachFaceToEnemy(e);
-            }
-            resolve(true);
+            console.log(`[Masked Merc] Лицо загружено: ${path}`);
+            resolve({ tex, aspect });
           },
           undefined,
-          (err) => {
-            console.warn(`[Masked Merc] Не удалось загрузить ${FACE_IMAGE_PATHS[type]} для "${type}"`, err);
-            resolve(false);
+          () => {
+            // Тихо — это ожидаемое поведение, если файла нет
+            resolve(null);
           }
         );
       });
-      faceLoadPromises.push(p);
+      textureCache[path] = p;
+      return p;
+    }
+
+    // Итоговые текстуры по типам: заполним после загрузки
+    const faceTextures = {
+      runner: null,
+      shooter: null,
+      brute: null,
+      tactician: null
+    };
+
+    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
+
+    // Шаг 1: загружаем putin.jpg и сразу назначаем всем типам
+    const loadDefaultPromise = loadFaceTexture(FACE_IMAGE_DEFAULT).then((data) => {
+      if (data) {
+        defaultFaceData = data;
+        for (const t of Object.keys(faceTextures)) {
+          faceTextures[t] = data;
+        }
+        // Догоняем уже заспавненных врагов
+        for (const e of enemies) {
+          if (!e.facePlane) attachFaceToEnemy(e);
+        }
+      } else {
+        console.warn('[Masked Merc] Не удалось загрузить', FACE_IMAGE_DEFAULT,
+          '— враги будут без лиц. Проверь, что файл лежит рядом с index.html.');
+      }
+      return data;
+    });
+
+    // Шаг 2: пытаемся загрузить опциональные override-картинки.
+    // Для каждого типа: если файл есть — заменяем, если нет — остаётся putin.jpg.
+    for (const type in FACE_IMAGE_OVERRIDES) {
+      const overridePath = FACE_IMAGE_OVERRIDES[type];
+      loadFaceTexture(overridePath).then((data) => {
+        if (!data) return; // Нет файла — используем putin.jpg (уже назначено)
+        faceTextures[type] = data;
+        // Догружаем уже заспавненным врагам этого типа, если у них
+        // старая (putin) текстура — заменяем
+        for (const e of enemies) {
+          if (e.type === type && e.facePlane) {
+            const oldTex = e.facePlane.material.map;
+            if (oldTex !== data.tex) {
+              scene.remove(e.facePlane);
+              e.facePlane = null;
+            }
+          }
+          if (e.type === type && !e.facePlane) attachFaceToEnemy(e);
+        }
+      });
     }
 
     const enemyMats = {
@@ -1083,10 +1111,8 @@
     const enemyTracerMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
     const tacticianTracerMat = new THREE.MeshBasicMaterial({ color: 0x66ffaa });
 
-    // Ящик с оружием — используем разные текстуры для разных типов
     const pickupGeo = new THREE.BoxGeometry(2.2, 0.9, 1.4);
 
-    // Emissive-материалы для свечения в темноте (оттенки под цвет текстуры)
     const pickupMats = {
       smg:      new THREE.MeshStandardMaterial({ map: pickupTextures.smg,      emissive: 0x4a3400, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
       shotgun:  new THREE.MeshStandardMaterial({ map: pickupTextures.shotgun,  emissive: 0x4a1c00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
@@ -1098,12 +1124,7 @@
     };
 
     const weaponIndexByType = {
-      smg: 1,
-      shotgun: 2,
-      assault: 3,
-      sniper: 4,
-      minigun: 5,
-      revolver: 6
+      smg: 1, shotgun: 2, assault: 3, sniper: 4, minigun: 5, revolver: 6
     };
 
     const weapons = [
@@ -1179,7 +1200,7 @@
     function playShootSound() { playSound('shoot'); }
 
     // ============================================================
-    //  ЭФФЕКТ УРОНА — КРАСНЫЙ ЭКРАН + ТРЕЩИНЫ
+    //  ЭФФЕКТ УРОНА
     // ============================================================
     const DAMAGE_DECAY_TIME = 4.0;
     const CRACK_TTL = 4.0;
@@ -1218,12 +1239,7 @@
           branches.push([x, y, nx, ny]);
           x = nx; y = ny;
         }
-        cracks.push({
-          branches,
-          ttl: CRACK_TTL,
-          maxTtl: CRACK_TTL,
-          seed: Math.random() * 1000
-        });
+        cracks.push({ branches, ttl: CRACK_TTL, maxTtl: CRACK_TTL, seed: Math.random() * 1000 });
       }
     }
 
@@ -1232,12 +1248,10 @@
       if (timeSinceDamage > 0.2) {
         damageLevel = Math.max(0, damageLevel - dt / DAMAGE_DECAY_TIME * 1.3);
       }
-
       for (let i = cracks.length - 1; i >= 0; i--) {
         cracks[i].ttl -= dt;
         if (cracks[i].ttl <= 0) cracks.splice(i, 1);
       }
-
       if (damageLevel > 0.001) {
         damageOverlay.style.opacity = String(damageLevel * 0.85);
       } else {
@@ -1247,15 +1261,12 @@
 
     function drawCracks() {
       if (cracks.length === 0) return;
-
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-
       for (const crack of cracks) {
         const lifeRatio = crack.ttl / crack.maxTtl;
         const alpha = Math.min(1, lifeRatio * 1.5) * 0.9;
-
         for (let pass = 0; pass < 2; pass++) {
           if (pass === 0) {
             ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
@@ -1264,7 +1275,6 @@
             ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.55})`;
             ctx.lineWidth = 1.4;
           }
-
           for (const [x1, y1, x2, y2] of crack.branches) {
             ctx.beginPath();
             const mx = (x1 + x2) / 2 + (Math.sin(crack.seed + x1) * 6);
@@ -1275,7 +1285,6 @@
           }
         }
       }
-
       ctx.restore();
     }
 
@@ -1308,12 +1317,9 @@
     let pointerLocked = false;
 
     const touch = {
-      moveId: null,
-      lookId: null,
-      moveStart: { x: 0, y: 0 },
-      moveCurrent: { x: 0, y: 0 },
-      lookLast: { x: 0, y: 0 },
-      moveVector: { x: 0, y: 0 },
+      moveId: null, lookId: null,
+      moveStart: { x: 0, y: 0 }, moveCurrent: { x: 0, y: 0 },
+      lookLast: { x: 0, y: 0 }, moveVector: { x: 0, y: 0 },
       fireBtnDown: false
     };
 
@@ -1462,11 +1468,8 @@
         fireCooldown: 0.8 + Math.random() * 0.7,
         strafeDir: Math.random() < 0.5 ? -1 : 1,
         facePlane: null,
-        burstLeft: 0,
-        burstCooldown: 0,
-        dodgeCooldown: 0,
-        coverTarget: null,
-        retreatMode: false
+        burstLeft: 0, burstCooldown: 0, dodgeCooldown: 0,
+        coverTarget: null, retreatMode: false
       };
 
       attachFaceToEnemy(enemy);
@@ -1492,7 +1495,6 @@
       const muzzlePos = new THREE.Vector3();
       gunBarrel.getWorldPosition(muzzlePos);
 
-      // При прицеливании разброс уменьшается
       const spreadMul = isAiming ? 0.35 : 1;
 
       for (let i = 0; i < weapon.pellets; i++) {
@@ -1543,24 +1545,18 @@
     function findCoverPoint(enemy) {
       let best = null;
       let bestScore = Infinity;
-
       for (const o of obstacles) {
         if (o.w < 3 || o.d < 3) continue;
-
         const toEnemyX = enemy.x - o.x;
         const toEnemyZ = enemy.z - o.z;
         const len = Math.hypot(toEnemyX, toEnemyZ) || 1;
         const dirX = toEnemyX / len, dirZ = toEnemyZ / len;
-
         const coverDist = Math.max(o.w, o.d) * 0.7 + 2;
         const tx = o.x + dirX * coverDist;
         const tz = o.z + dirZ * coverDist;
-
         if (hitsObstacleOrBounds(tx, tz, enemy.r)) continue;
-
         const d = Math.hypot(tx - enemy.x, tz - enemy.z);
         if (d > 22) continue;
-
         const midX = (tx + player.x) / 2;
         const midZ = (tz + player.z) / 2;
         let covered = false;
@@ -1568,12 +1564,7 @@
           if (circleRectCollideXZ(midX, midZ, 1.5, o2)) { covered = true; break; }
         }
         if (!covered) continue;
-
-        const score = d;
-        if (score < bestScore) {
-          bestScore = score;
-          best = { x: tx, z: tz };
-        }
+        if (d < bestScore) { bestScore = d; best = { x: tx, z: tz }; }
       }
       return best;
     }
@@ -1581,12 +1572,11 @@
     function updateTactician(e, dt, dist, nx, nz) {
       e.dodgeCooldown -= dt;
       e.burstCooldown -= dt;
-
       e.retreatMode = e.hp / e.maxHp < 0.4;
 
       let mx = 0, mz = 0;
-
       let dodging = false;
+
       if (e.dodgeCooldown <= 0) {
         for (const b of bullets) {
           if (!b.friendly) continue;
@@ -1630,7 +1620,6 @@
             if (Math.random() < dt * 0.5) e.strafeDir *= -1;
           }
         }
-
         mx += (Math.random() - 0.5) * 0.3;
         mz += (Math.random() - 0.5) * 0.3;
       }
@@ -1646,27 +1635,22 @@
           e.burstCooldown = 0;
           e.fireCooldown = 2.0 + Math.random() * 1.5;
         }
-
         if (e.burstLeft > 0 && e.burstCooldown <= 0) {
           e.burstLeft--;
           e.burstCooldown = 0.14;
-
           const targetY = EYE_HEIGHT, fromY = e.y;
           const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
           const tlen = Math.hypot(tdx, tdy, tdz) || 1;
           const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
-
           dir.x += (Math.random() - 0.5) * 0.04;
           dir.y += (Math.random() - 0.5) * 0.04;
           dir.z += (Math.random() - 0.5) * 0.04;
           dir.normalize();
-
           const bx = e.x + nx * (e.r + 0.5), bz = e.z + nz * (e.r + 0.5);
           const mesh = new THREE.Mesh(tracerGeo, tacticianTracerMat);
           mesh.position.set(bx, fromY, bz);
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
           scene.add(mesh);
-
           bullets.push({
             x: bx, y: fromY, z: bz,
             vx: dir.x * 38, vy: dir.y * 38, vz: dir.z * 38,
@@ -1681,10 +1665,7 @@
 
       updateDamageEffect(dt);
 
-      // ---- Прицеливание ----
-      // Целевое значение adsBlend
       const adsTarget = isAiming ? 1 : 0;
-      // Плавное приближение (dt * 8 = примерно 0.125 сек до полного перехода)
       adsBlend += (adsTarget - adsBlend) * Math.min(1, dt * 8);
       camera.fov = currentBaseFov * (1 - adsBlend) + ADS_FOV * adsBlend;
       camera.updateProjectionMatrix();
@@ -1693,14 +1674,11 @@
         player.jumpVel -= JUMP_GRAVITY * dt;
         player.jumpOffset += player.jumpVel * dt;
         if (player.jumpOffset <= 0) {
-          player.jumpOffset = 0;
-          player.jumpVel = 0;
-          player.jumping = false;
+          player.jumpOffset = 0; player.jumpVel = 0; player.jumping = false;
         }
       }
 
       if (mouseLookAccum.x !== 0 || mouseLookAccum.y !== 0) {
-        // При прицеливании чувствительность чуть ниже
         const sensMul = 1 - adsBlend * 0.5;
         player.yaw -= mouseLookAccum.x * LOOK_SENS_MOUSE * sensMul;
         player.pitch -= mouseLookAccum.y * LOOK_SENS_MOUSE * sensMul;
@@ -1769,13 +1747,11 @@
             dir.y += (Math.random() - 0.5) * 0.08;
             dir.z += (Math.random() - 0.5) * 0.08;
             dir.normalize();
-
             const bx = e.x + nx * (e.r + 0.5), bz = e.z + nz * (e.r + 0.5);
             const mesh = new THREE.Mesh(tracerGeo, enemyTracerMat);
             mesh.position.set(bx, fromY, bz);
             mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
             scene.add(mesh);
-
             bullets.push({
               x: bx, y: fromY, z: bz,
               vx: dir.x * 28, vy: dir.y * 28, vz: dir.z * 28,
@@ -1783,7 +1759,6 @@
             });
             e.fireCooldown = Math.max(0.7, 1.35 - wave * 0.03);
           }
-
           moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
         } else {
           moveWithCollision(e, nx * e.speed * dt, nz * e.speed * dt);
@@ -1810,9 +1785,7 @@
         b.life -= dt;
 
         if (b.life <= 0 || hitsObstacleOrBounds(b.x, b.z, b.r) || (b.is3D && (b.y < 0.1 || b.y > 20))) {
-          scene.remove(b.mesh);
-          bullets.splice(i, 1);
-          continue;
+          scene.remove(b.mesh); bullets.splice(i, 1); continue;
         }
 
         let removed = false;
@@ -1916,21 +1889,13 @@
         Math.tan(THREE.MathUtils.degToRad(BASE_FOV) * 0.5);
 
       const jumpDip = player.jumpOffset * 0.12;
-
-      // Плавный переход между hip- и ADS-позициями оружия
       const bx = (WEAPON_POS_HIP.x + bobX) * (1 - adsBlend) + WEAPON_POS_ADS.x * adsBlend;
       const by = (WEAPON_POS_HIP.y + bobY) * (1 - adsBlend) + WEAPON_POS_ADS.y * adsBlend;
       const bz = WEAPON_POS_HIP.z * (1 - adsBlend) + WEAPON_POS_ADS.z * adsBlend;
-
-      // При прицеливании покачивание уменьшается
       const bobMul = (1 - adsBlend * 0.85);
 
       weaponGroup.scale.setScalar(fovScale);
-      weaponGroup.position.set(
-        bx * fovScale,
-        by * fovScale - jumpDip,
-        bz + weaponRecoil
-      );
+      weaponGroup.position.set(bx * fovScale, by * fovScale - jumpDip, bz + weaponRecoil);
       weaponGroup.rotation.x = -weaponRecoil * 2.5;
       weaponGroup.rotation.y = -bobX * 0.5 * bobMul;
 
@@ -1946,20 +1911,15 @@
       for (const e of enemies) {
         _projVec.set(e.x, e.y + e.r * 0.9 + 0.5, e.z);
         _projVec.project(camera);
-
         if (_projVec.z > 1) continue;
-
         const sx = (_projVec.x * 0.5 + 0.5) * view.cssW;
         const sy = (-_projVec.y * 0.5 + 0.5) * view.cssH;
-
         if (sx < -100 || sx > view.cssW + 100 || sy < -60 || sy > view.cssH + 60) continue;
 
         const dist = Math.hypot(e.x - player.x, e.z - player.z);
         const barW = Math.max(30, Math.min(90, 1200 / (dist + 8)));
         const barH = Math.max(5, Math.min(8, barW * 0.1));
-        const x = sx - barW / 2;
-        const y = sy;
-
+        const x = sx - barW / 2, y = sy;
         const hpRatio = Math.max(0, Math.min(1, e.hp / e.maxHp));
 
         ctx.fillStyle = "rgba(0,0,0,0.72)";
@@ -1968,8 +1928,7 @@
         if (e.type === "tactician") {
           ctx.fillStyle = `hsl(${140 + hpRatio * 40}, 80%, ${40 + hpRatio * 20}%)`;
         } else {
-          const hue = hpRatio * 120;
-          ctx.fillStyle = `hsl(${hue}, 78%, 55%)`;
+          ctx.fillStyle = `hsl(${hpRatio * 120}, 78%, 55%)`;
         }
         ctx.fillRect(x, y, barW * hpRatio, barH);
 
@@ -2005,7 +1964,6 @@
       drawEnemyHealthBars();
       drawCracks();
 
-      // Прицел: при ADS немного уменьшается, чтобы не мешать
       const cx = view.cssW / 2, cy = view.cssH / 2;
       const scale = 1 - adsBlend * 0.45;
       const gap = 6 * scale, length = 12 * scale, thickness = 2;
@@ -2052,13 +2010,11 @@
 
     function drawTouchControls() {
       if (state !== "playing" || !isTouchDevice) return;
-
       if (touch.moveId === null) {
         drawStaticJoystickHint(view.cssW * 0.2, view.cssH * 0.75, 50, "rgba(255,255,255,0.4)", "ДВИЖЕНИЕ");
       } else {
         drawJoystick(touch.moveStart, touch.moveCurrent, MOVE_RADIUS, "rgba(255, 255, 255, 0.6)");
       }
-
       if (touch.lookId === null) {
          ctx.save();
          ctx.globalAlpha = 0.15;
@@ -2245,14 +2201,12 @@
     });
 
     sceneCanvas.addEventListener("mousedown", (e) => {
-      // ЛКМ — стрельба
       if (e.button === 0) {
         mouseDown = true;
         if (state !== "playing") {
           if (state === "menu" || state === "gameover") startGame();
         }
       }
-      // ПКМ — прицеливание
       if (e.button === 2) {
         isAiming = true;
         if (state === "menu" || state === "gameover") startGame();
@@ -2264,9 +2218,7 @@
       if (e.button === 2) isAiming = false;
     });
 
-    // Не даём браузеру открыть контекстное меню по ПКМ на игровом поле
     sceneCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
-    // При потере фокуса окна выключаем прицеливание (иначе залипнет)
     window.addEventListener("blur", () => { isAiming = false; mouseDown = false; });
 
     fireBtn.addEventListener("pointerdown", (e) => {
@@ -2293,12 +2245,9 @@
     sceneCanvas.addEventListener("pointerdown", (e) => {
       if (!isTouchDevice) return;
       e.preventDefault();
-
       if (state === "paused") { togglePause(); return; }
       if (state !== "playing") { startGame(); return; }
-
       const isLeftSide = e.clientX < view.cssW * 0.6;
-
       if (isLeftSide && touch.moveId === null) {
         touch.moveId = e.pointerId;
         touch.moveStart = { x: e.clientX, y: e.clientY };
@@ -2313,20 +2262,16 @@
     sceneCanvas.addEventListener("pointermove", (e) => {
       if (!isTouchDevice) return;
       e.preventDefault(); 
-
       if (e.pointerId === touch.moveId) {
         touch.moveCurrent = { x: e.clientX, y: e.clientY };
         updateTouchVectors();
       }
-
       if (e.pointerId === touch.lookId) {
         const dx = e.clientX - touch.lookLast.x;
         const dy = e.clientY - touch.lookLast.y;
-
         player.yaw -= dx * LOOK_SENS_TOUCH;
         player.pitch -= dy * LOOK_SENS_TOUCH;
         clampPitch();
-
         touch.lookLast = { x: e.clientX, y: e.clientY };
       }
     }, { passive: false });
@@ -2348,7 +2293,6 @@
       const key = e.key.toLowerCase();
       keys[key] = true;
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) e.preventDefault();
-
       if (key === " ") {
         if (state === "playing") tryJump();
         else if (state === "paused") togglePause();
