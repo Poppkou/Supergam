@@ -490,8 +490,6 @@
     const FACE_IMAGE_PATH = './putin.jpg';
 
     const textureLoader = new THREE.TextureLoader();
-    // Разрешаем загрузку с любого origin (на случай если кто-то всё же
-    // положит файл на CDN)
     textureLoader.setCrossOrigin('anonymous');
 
     // Базовые (fallback) цвета — используются, пока текстура грузится,
@@ -510,6 +508,11 @@
     let faceTexture = null;
     let faceTextureReady = false;
     let faceTextureFailed = false;
+    let faceAspect = 1;
+
+    // Радиусы капсул — используются и для коллизий, и для позиционирования
+    // плоскости с лицом на нужном расстоянии от центра.
+    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1 };
 
     // Загружаем текстуру заранее, до начала раунда
     const textureLoadedPromise = new Promise((resolve) => {
@@ -517,15 +520,29 @@
         FACE_IMAGE_PATH,
         (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace;
-          tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-          tex.repeat.set(2, 1);   // два «лица» вокруг капсулы — эпичнее
+          // НЕ используем RepeatWrapping — иначе на плоскости лицо
+          // может отражаться зеркально/повторяться. ClampToEdge надёжнее.
+          tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
           tex.anisotropy = 4;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+
+          // Реальные пропорции картинки, чтобы не растянуть лицо
+          if (tex.image && tex.image.width && tex.image.height) {
+            faceAspect = tex.image.width / tex.image.height;
+          }
+
           faceTexture = tex;
           faceTextureReady = true;
           console.log('[Masked Merc] Текстура врага загружена:', FACE_IMAGE_PATH);
+
+          // Донашиваем лицо уже заспавненным врагам (на случай,
+          // если первый спавн произошёл до окончания загрузки)
+          for (const e of enemies) attachFaceToEnemy(e);
+
           resolve(true);
         },
-        undefined, // прогресс не нужен
+        undefined,
         (err) => {
           faceTextureFailed = true;
           console.warn(
@@ -538,8 +555,8 @@
       );
     });
 
-    // Создаём материалы врагов СРАЗУ, но текстуру подставим позже,
-    // когда она реально загрузится. До этого используется fallback-цвет.
+    // Материалы-капсулы врагов: лицо будет отдельной плоскостью,
+    // а тело остаётся цветным — видно с боков и сзади.
     const enemyMats = {
       runner: new THREE.MeshStandardMaterial({
         color: FALLBACK_COLORS.runner,
@@ -558,22 +575,52 @@
       })
     };
 
-    // Когда текстура готова — натягиваем её на все три материала
-    textureLoadedPromise.then((ok) => {
-      if (!ok) return;
-      for (const key of Object.keys(enemyMats)) {
-        const mat = enemyMats[key];
-        mat.map = faceTexture;
-        mat.color.set(0xffffff); // чтобы текстура показывалась без тонирования
-        mat.needsUpdate = true;
-      }
-    });
-
     const enemyGeos = {
       runner: new THREE.CapsuleGeometry(1.2, 1.2, 6, 12),
       shooter: new THREE.CapsuleGeometry(1.3, 1.2, 6, 12),
       brute: new THREE.CapsuleGeometry(2.1, 1.6, 6, 12)
     };
+
+    // ============================================================
+    //  ТАБЛИЧКА С ЛИЦОМ ПЕРЕД ВРАГОМ
+    // ============================================================
+    //  Плоскость крепится как child к мешу врага и стоит на его
+    //  локальной оси +Z (направление «вперёд»). Так как сам враг
+    //  каждый кадр поворачивается rotation.y = atan2(dx, dz) лицом
+    //  к игроку, эта плоскость тоже всегда смотрит точно на игрока.
+    // ============================================================
+    function attachFaceToEnemy(enemy) {
+      if (!faceTexture || !enemy || !enemy.mesh) return;
+      if (enemy.mesh.userData.faceAttached) return;
+
+      const r = enemyRadii[enemy.type] || 1.3;
+
+      // Размеры: высота ~ 1.7 * радиус, ширина по пропорции картинки
+      const h = r * 1.7;
+      const w = h * (faceAspect || 1);
+
+      const geo = new THREE.PlaneGeometry(w, h);
+
+      const mat = new THREE.MeshBasicMaterial({
+        map: faceTexture,
+        transparent: true,
+        // Лицо должно быть видно всегда, даже в тени — BasicMaterial
+        // игнорирует освещение, но остаётся читаемым в тёмной арене.
+        toneMapped: false,
+        side: THREE.FrontSide,
+        depthWrite: true
+      });
+
+      const plane = new THREE.Mesh(geo, mat);
+      // Ставим чуть впереди поверхности капсулы
+      plane.position.set(0, 0.1, r + 0.06);
+      // Чуть выступает над капсулой — не будет z-fighting
+      plane.renderOrder = 2;
+
+      enemy.mesh.add(plane);
+      enemy.mesh.userData.faceAttached = true;
+      enemy.mesh.userData.facePlane = plane;
+    }
 
     const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9 };
     const tracerGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.0, 6);
@@ -719,9 +766,7 @@
       if (wave >= 3 && roll < 0.18) type = "brute";
       else if (wave >= 2 && roll < 0.48) type = "shooter";
 
-      let r = 1.3;
-      if (type === "brute") r = 2.2;
-      if (type === "shooter") r = 1.4;
+      let r = enemyRadii[type];
 
       let x = -HALF_W + 4, z = -HALF_D + 4;
       for (let i = 0; i < 60; i++) {
@@ -749,10 +794,15 @@
       mesh.castShadow = true;
       scene.add(mesh);
 
-      enemies.push({
+      const enemy = {
         type, x, z, y, r, hp, maxHp: hp, speed, damage, score: scoreValue, mesh,
         fireCooldown: 0.8 + Math.random() * 0.7, strafeDir: Math.random() < 0.5 ? -1 : 1
-      });
+      };
+
+      // Если текстура уже загружена — сразу приклеиваем лицо
+      attachFaceToEnemy(enemy);
+
+      enemies.push(enemy);
     }
 
     // ИСПРАВЛЕНО: «вперёд» совпадает с направлением взгляда камеры
