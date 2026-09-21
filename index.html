@@ -141,7 +141,7 @@
     const obstacles = [];
 
     // ============================================================
-    //  ПРОЦЕДУРНЫЕ ТЕКСТУРЫ
+    //  ПРОЦЕДУРНЫЕ ТЕКСТУРЫ АРЕНЫ
     // ============================================================
     function makeTexture(size, drawFn, repeatX = 1, repeatY = 1) {
       const c = document.createElement('canvas');
@@ -162,9 +162,7 @@
       for (let i = 0; i < 6000; i++) {
         const v = Math.random();
         const alpha = Math.random() * 0.12;
-        g.fillStyle = v > 0.5
-          ? `rgba(200,210,240,${alpha})`
-          : `rgba(0,0,0,${alpha})`;
+        g.fillStyle = v > 0.5 ? `rgba(200,210,240,${alpha})` : `rgba(0,0,0,${alpha})`;
         g.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
       g.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -484,16 +482,11 @@
     // ============================================================
     //  ПРЕДЗАГРУЗКА ТЕКСТУРЫ ЛИЦА ВРАГА
     // ============================================================
-    //  Файл должен лежать рядом с этим HTML и называться putin.jpg
-    //  (или поменяй путь ниже). Работает и офлайн, и на GitHub Pages.
-    // ============================================================
     const FACE_IMAGE_PATH = './putin.jpg';
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
 
-    // Базовые (fallback) цвета — используются, пока текстура грузится,
-    // и остаются навсегда, если загрузка не удалась.
     const FALLBACK_COLORS = {
       runner: 0xbf4654,
       shooter: 0xc47b21,
@@ -510,24 +503,19 @@
     let faceTextureFailed = false;
     let faceAspect = 1;
 
-    // Радиусы капсул — используются и для коллизий, и для позиционирования
-    // плоскости с лицом на нужном расстоянии от центра.
+    // Радиусы капсул — общие для коллизий, отрисовки и позиционирования лица
     const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1 };
 
-    // Загружаем текстуру заранее, до начала раунда
     const textureLoadedPromise = new Promise((resolve) => {
       textureLoader.load(
         FACE_IMAGE_PATH,
         (tex) => {
           tex.colorSpace = THREE.SRGBColorSpace;
-          // НЕ используем RepeatWrapping — иначе на плоскости лицо
-          // может отражаться зеркально/повторяться. ClampToEdge надёжнее.
           tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
           tex.anisotropy = 4;
           tex.minFilter = THREE.LinearMipmapLinearFilter;
           tex.magFilter = THREE.LinearFilter;
 
-          // Реальные пропорции картинки, чтобы не растянуть лицо
           if (tex.image && tex.image.width && tex.image.height) {
             faceAspect = tex.image.width / tex.image.height;
           }
@@ -536,8 +524,7 @@
           faceTextureReady = true;
           console.log('[Masked Merc] Текстура врага загружена:', FACE_IMAGE_PATH);
 
-          // Донашиваем лицо уже заспавненным врагам (на случай,
-          // если первый спавн произошёл до окончания загрузки)
+          // Догружаем на уже живых врагов
           for (const e of enemies) attachFaceToEnemy(e);
 
           resolve(true);
@@ -555,8 +542,8 @@
       );
     });
 
-    // Материалы-капсулы врагов: лицо будет отдельной плоскостью,
-    // а тело остаётся цветным — видно с боков и сзади.
+    // Тело врага (капсула) — просто цветное. Лицо будет отдельной
+    // billboard-табличкой поверх капсулы.
     const enemyMats = {
       runner: new THREE.MeshStandardMaterial({
         color: FALLBACK_COLORS.runner,
@@ -582,44 +569,70 @@
     };
 
     // ============================================================
-    //  ТАБЛИЧКА С ЛИЦОМ ПЕРЕД ВРАГОМ
+    //  BILLBOARD-ЛИЦО ПЕРЕД ВРАГОМ
     // ============================================================
-    //  Плоскость крепится как child к мешу врага и стоит на его
-    //  локальной оси +Z (направление «вперёд»). Так как сам враг
-    //  каждый кадр поворачивается rotation.y = atan2(dx, dz) лицом
-    //  к игроку, эта плоскость тоже всегда смотрит точно на игрока.
+    //  Плоскость с лицом НЕ привязана к врагу как child — она лежит
+    //  прямо в сцене. Каждый кадр её позиция и ориентация
+    //  пересчитываются так, чтобы она:
+    //    1) стояла перед врагом со стороны игрока,
+    //    2) была развёрнута нормалью прямо на камеру (lookAt).
+    //  Поэтому с какого бы угла вы ни смотрели — вы видите лицо
+    //  строго анфас, без «заваливания» и без боковых видов.
     // ============================================================
     function attachFaceToEnemy(enemy) {
-      if (!faceTexture || !enemy || !enemy.mesh) return;
-      if (enemy.mesh.userData.faceAttached) return;
+      if (!faceTexture || !enemy) return;
+      if (enemy.facePlane) return;
 
       const r = enemyRadii[enemy.type] || 1.3;
-
-      // Размеры: высота ~ 1.7 * радиус, ширина по пропорции картинки
       const h = r * 1.7;
       const w = h * (faceAspect || 1);
 
       const geo = new THREE.PlaneGeometry(w, h);
-
       const mat = new THREE.MeshBasicMaterial({
         map: faceTexture,
         transparent: true,
-        // Лицо должно быть видно всегда, даже в тени — BasicMaterial
-        // игнорирует освещение, но остаётся читаемым в тёмной арене.
         toneMapped: false,
-        side: THREE.FrontSide,
+        side: THREE.DoubleSide, // На всякий случай — если что-то пойдёт не так,
+                                // задняя сторона тоже будет отрисована
         depthWrite: true
       });
 
       const plane = new THREE.Mesh(geo, mat);
-      // Ставим чуть впереди поверхности капсулы
-      plane.position.set(0, 0.1, r + 0.06);
-      // Чуть выступает над капсулой — не будет z-fighting
       plane.renderOrder = 2;
+      scene.add(plane);
+      enemy.facePlane = plane;
 
-      enemy.mesh.add(plane);
-      enemy.mesh.userData.faceAttached = true;
-      enemy.mesh.userData.facePlane = plane;
+      // Сразу ставим в правильную позицию, чтобы не мигало в (0,0,0)
+      updateFacePlaneTransform(enemy);
+    }
+
+    function updateFacePlaneTransform(enemy) {
+      const plane = enemy.facePlane;
+      if (!plane) return;
+
+      const r = enemyRadii[enemy.type] || 1.3;
+
+      // Горизонтальное направление от врага к камере
+      const dx = camera.position.x - enemy.x;
+      const dz = camera.position.z - enemy.z;
+      const dh = Math.hypot(dx, dz) || 1;
+      const ux = dx / dh, uz = dz / dh;
+
+      // Ставим табличку на радиусе капсулы в сторону игрока
+      plane.position.set(
+        enemy.x + ux * (r + 0.06),
+        enemy.y + 0.15,
+        enemy.z + uz * (r + 0.06)
+      );
+
+      // Разворачиваем нормаль на камеру. Держим Y одинаковым,
+      // чтобы табличка не «задирала нос» вверх/вниз — так лицо
+      // всегда стоит вертикально.
+      plane.lookAt(
+        camera.position.x,
+        plane.position.y,
+        camera.position.z
+      );
     }
 
     const enemyY = { runner: 1.8, shooter: 1.9, brute: 2.9 };
@@ -685,7 +698,10 @@
     const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     function clearEntities() {
-      for (const e of enemies) scene.remove(e.mesh);
+      for (const e of enemies) {
+        scene.remove(e.mesh);
+        if (e.facePlane) scene.remove(e.facePlane);
+      }
       for (const b of bullets) scene.remove(b.mesh);
       for (const p of pickups) scene.remove(p.mesh);
       enemies = []; bullets = []; pickups = [];
@@ -796,16 +812,15 @@
 
       const enemy = {
         type, x, z, y, r, hp, maxHp: hp, speed, damage, score: scoreValue, mesh,
-        fireCooldown: 0.8 + Math.random() * 0.7, strafeDir: Math.random() < 0.5 ? -1 : 1
+        fireCooldown: 0.8 + Math.random() * 0.7, strafeDir: Math.random() < 0.5 ? -1 : 1,
+        facePlane: null
       };
 
-      // Если текстура уже загружена — сразу приклеиваем лицо
       attachFaceToEnemy(enemy);
-
       enemies.push(enemy);
     }
 
-    // ИСПРАВЛЕНО: «вперёд» совпадает с направлением взгляда камеры
+    // «Вперёд» совпадает с направлением взгляда камеры
     function getForwardXZ() { return { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) }; }
     function getRightXZ() { return { x: Math.cos(player.yaw), z: -Math.sin(player.yaw) }; }
 
@@ -958,6 +973,9 @@
         e.mesh.position.set(e.x, e.y, e.z);
         e.mesh.rotation.y = Math.atan2(dx, dz);
 
+        // Обновляем billboard-лицо (позицию и ориентацию на камеру)
+        updateFacePlaneTransform(e);
+
         if (dist < e.r + player.r + 0.3 && player.invuln <= 0) {
           player.hp -= e.damage;
           player.invuln = 0.7;
@@ -992,6 +1010,7 @@
               if (e.hp <= 0) {
                 score += e.score;
                 scene.remove(e.mesh);
+                if (e.facePlane) scene.remove(e.facePlane);
                 dropPickup(e.x, e.z);
                 enemies.splice(j, 1);
               }
@@ -1374,4 +1393,4 @@
     updateFullscreenButton();
   </script>
 </body>
-</html>
+  </html>
