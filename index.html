@@ -203,7 +203,7 @@
     const obstacles = [];
 
     // ============================================================
-    //  ПРОЦЕДУРНЫЕ ТЕКСТУРЫ — ЗОНА БОЕВЫХ ДЕЙСТВИЙ
+    //  ПРОЦЕДУРНЫЕ ТЕКСТУРЫ
     // ============================================================
     function makeTexture(size, drawFn, repeatX = 1, repeatY = 1) {
       const c = document.createElement('canvas');
@@ -222,24 +222,18 @@
       g.fillStyle = '#3a2a1c';
       g.fillRect(0, 0, s, s);
       for (let i = 0; i < 1200; i++) {
-        const x = Math.random() * s;
-        const y = Math.random() * s;
-        const r = 6 + Math.random() * 26;
+        const x = Math.random() * s, y = Math.random() * s, r = 6 + Math.random() * 26;
         const green = 50 + Math.random() * 70;
         g.fillStyle = `rgba(${green * 0.55}, ${green}, ${green * 0.3}, ${0.25 + Math.random() * 0.4})`;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
       for (let i = 0; i < 400; i++) {
-        const x = Math.random() * s;
-        const y = Math.random() * s;
-        const r = 8 + Math.random() * 22;
+        const x = Math.random() * s, y = Math.random() * s, r = 8 + Math.random() * 22;
         g.fillStyle = `rgba(85, 60, 35, ${0.3 + Math.random() * 0.5})`;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
       for (let i = 0; i < 60; i++) {
-        const x = Math.random() * s;
-        const y = Math.random() * s;
-        const r = 6 + Math.random() * 18;
+        const x = Math.random() * s, y = Math.random() * s, r = 6 + Math.random() * 18;
         g.fillStyle = `rgba(15, 10, 8, ${0.35 + Math.random() * 0.4})`;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
@@ -249,16 +243,11 @@
         g.beginPath();
         let x = Math.random() * s, y = Math.random() * s;
         g.moveTo(x, y);
-        for (let j = 0; j < 5; j++) {
-          x += (Math.random() - 0.5) * 100;
-          y += (Math.random() - 0.5) * 100;
-          g.lineTo(x, y);
-        }
+        for (let j = 0; j < 5; j++) { x += (Math.random() - 0.5) * 100; y += (Math.random() - 0.5) * 100; g.lineTo(x, y); }
         g.stroke();
       }
       for (let i = 0; i < 6000; i++) {
-        const v = Math.random();
-        const a = Math.random() * 0.16;
+        const v = Math.random(), a = Math.random() * 0.16;
         g.fillStyle = v > 0.5 ? `rgba(180,160,120,${a})` : `rgba(0,0,0,${a})`;
         g.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
@@ -267,11 +256,9 @@
     function drawSandbag(g, s) {
       g.fillStyle = '#6a5a3a';
       g.fillRect(0, 0, s, s);
-      const rows = 5;
-      const rowH = s / rows;
+      const rows = 5, rowH = s / rows;
       for (let r = 0; r < rows; r++) {
-        const y = r * rowH;
-        const offset = (r % 2) * (s / 10);
+        const y = r * rowH, offset = (r % 2) * (s / 10);
         for (let i = -1; i < 6; i++) {
           const x = i * (s / 5) + offset;
           const shade = 0.8 + Math.random() * 0.3;
@@ -307,9 +294,7 @@
         g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
       }
       for (let i = 0; i < 40; i++) {
-        const x = Math.random() * s;
-        const y = Math.random() * s;
-        const r = 4 + Math.random() * 15;
+        const x = Math.random() * s, y = Math.random() * s, r = 4 + Math.random() * 15;
         g.fillStyle = `rgba(140, 70, 30, ${0.15 + Math.random() * 0.3})`;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
       }
@@ -354,10 +339,8 @@
       g.fillStyle = grad;
       g.fillRect(0, 0, s, s);
       for (let i = 0; i < 90; i++) {
-        const x = Math.random() * s;
-        const y = s * 0.15 + Math.random() * s * 0.55;
-        const r = 25 + Math.random() * 90;
-        const alpha = 0.04 + Math.random() * 0.16;
+        const x = Math.random() * s, y = s * 0.15 + Math.random() * s * 0.55;
+        const r = 25 + Math.random() * 90, alpha = 0.04 + Math.random() * 0.16;
         const grey = 30 + Math.random() * 50;
         g.fillStyle = `rgba(${grey}, ${Math.floor(grey * 0.8)}, ${Math.floor(grey * 0.75)}, ${alpha})`;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
@@ -382,8 +365,7 @@
         g.fill();
       }
       for (let i = 0; i < 6; i++) {
-        const x = Math.random() * s;
-        const y = s * 0.86 + Math.random() * s * 0.05;
+        const x = Math.random() * s, y = s * 0.86 + Math.random() * s * 0.05;
         const r = 20 + Math.random() * 60;
         const glow = g.createRadialGradient(x, y, 0, x, y, r);
         glow.addColorStop(0, 'rgba(255, 140, 60, 0.35)');
@@ -412,16 +394,10 @@
       }
     }
 
-    // ============================================================
-    //  ТЕКСТУРЫ ДЛЯ ВЫПАВШЕГО ОРУЖИЯ
-    // ============================================================
     function baseWeaponPlate(g, s, bg1, bg2, borderColor) {
       const grad = g.createLinearGradient(0, 0, s, s);
-      grad.addColorStop(0, bg1);
-      grad.addColorStop(1, bg2);
-      g.fillStyle = grad;
-      g.fillRect(0, 0, s, s);
-
+      grad.addColorStop(0, bg1); grad.addColorStop(1, bg2);
+      g.fillStyle = grad; g.fillRect(0, 0, s, s);
       for (let i = 0; i < 800; i++) {
         g.fillStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
         g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
@@ -430,7 +406,6 @@
         g.fillStyle = `rgba(0,0,0,${Math.random() * 0.14})`;
         g.fillRect(Math.random() * s, Math.random() * s, 3, 3);
       }
-
       g.strokeStyle = borderColor;
       g.lineWidth = 8;
       g.strokeRect(8, 8, s - 16, s - 16);
@@ -445,15 +420,11 @@
       g.fillRect(s * 0.28, s * 0.52, s * 0.44, s * 0.08);
       g.fillRect(s * 0.55, s * 0.42, s * 0.06, s * 0.10);
       g.fillRect(s * 0.30, s * 0.58, s * 0.10, s * 0.22);
-      g.beginPath();
-      g.arc(s * 0.72, s * 0.36, s * 0.05, 0, Math.PI * 2);
-      g.fill();
+      g.beginPath(); g.arc(s * 0.72, s * 0.36, s * 0.05, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.13}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.13}px Arial`; g.textAlign = 'center';
       g.fillText('SMG', s * 0.5, s * 0.30);
     }
-
     function drawShotgunTexture(g, s) {
       baseWeaponPlate(g, s, '#ff8a65', '#e64a19', '#4a1c00');
       g.fillStyle = '#e53935';
@@ -463,11 +434,9 @@
       g.fillRect(s * 0.30, s * 0.66, s * 0.10, s * 0.08);
       g.fillRect(s * 0.60, s * 0.66, s * 0.10, s * 0.08);
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.13}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.13}px Arial`; g.textAlign = 'center';
       g.fillText('SHOTGUN', s * 0.5, s * 0.28);
     }
-
     function drawAssaultTexture(g, s) {
       baseWeaponPlate(g, s, '#4dd0e1', '#0097a7', '#003d44');
       g.fillStyle = '#1a1a1a';
@@ -475,18 +444,13 @@
       g.fillRect(s * 0.36, s * 0.57, s * 0.12, s * 0.20);
       g.fillRect(s * 0.22, s * 0.40, s * 0.05, s * 0.10);
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.12}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.12}px Arial`; g.textAlign = 'center';
       g.fillText('ASSAULT', s * 0.5, s * 0.30);
     }
-
     function drawSniperTexture(g, s) {
       baseWeaponPlate(g, s, '#ce93d8', '#8e24aa', '#2a0033');
-      g.strokeStyle = '#1a1a1a';
-      g.lineWidth = s * 0.02;
-      g.beginPath();
-      g.arc(s * 0.5, s * 0.5, s * 0.16, 0, Math.PI * 2);
-      g.stroke();
+      g.strokeStyle = '#1a1a1a'; g.lineWidth = s * 0.02;
+      g.beginPath(); g.arc(s * 0.5, s * 0.5, s * 0.16, 0, Math.PI * 2); g.stroke();
       g.beginPath();
       g.moveTo(s * 0.5, s * 0.26); g.lineTo(s * 0.5, s * 0.42);
       g.moveTo(s * 0.5, s * 0.58); g.lineTo(s * 0.5, s * 0.74);
@@ -494,47 +458,35 @@
       g.moveTo(s * 0.58, s * 0.5); g.lineTo(s * 0.74, s * 0.5);
       g.stroke();
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.12}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.12}px Arial`; g.textAlign = 'center';
       g.fillText('SNIPER', s * 0.5, s * 0.24);
     }
-
     function drawMinigunTexture(g, s) {
       baseWeaponPlate(g, s, '#ef9a9a', '#c62828', '#4a0808');
       g.fillStyle = '#1a1a1a';
       g.fillRect(s * 0.32, s * 0.40, s * 0.06, s * 0.34);
       g.fillRect(s * 0.47, s * 0.40, s * 0.06, s * 0.34);
       g.fillRect(s * 0.62, s * 0.40, s * 0.06, s * 0.34);
-      g.beginPath();
-      g.arc(s * 0.5, s * 0.74, s * 0.14, 0, Math.PI * 2);
-      g.fill();
+      g.beginPath(); g.arc(s * 0.5, s * 0.74, s * 0.14, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.11}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.11}px Arial`; g.textAlign = 'center';
       g.fillText('MINIGUN', s * 0.5, s * 0.28);
     }
-
     function drawRevolverTexture(g, s) {
       baseWeaponPlate(g, s, '#80cbc4', '#00796b', '#003a35');
       g.fillStyle = '#1a1a1a';
-      g.beginPath();
-      g.arc(s * 0.5, s * 0.52, s * 0.18, 0, Math.PI * 2);
-      g.fill();
+      g.beginPath(); g.arc(s * 0.5, s * 0.52, s * 0.18, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#bdbdbd';
       for (let i = 0; i < 6; i++) {
         const ang = (i / 6) * Math.PI * 2;
         const cx = s * 0.5 + Math.cos(ang) * s * 0.11;
         const cy = s * 0.52 + Math.sin(ang) * s * 0.11;
-        g.beginPath();
-        g.arc(cx, cy, s * 0.025, 0, Math.PI * 2);
-        g.fill();
+        g.beginPath(); g.arc(cx, cy, s * 0.025, 0, Math.PI * 2); g.fill();
       }
       g.fillStyle = '#ffffff';
-      g.font = `bold ${s * 0.11}px Arial`;
-      g.textAlign = 'center';
+      g.font = `bold ${s * 0.11}px Arial`; g.textAlign = 'center';
       g.fillText('REVOLVER', s * 0.5, s * 0.26);
     }
-
     function drawMedkitTexture(g, s) {
       baseWeaponPlate(g, s, '#81c784', '#2e7d32', '#0d3d13');
       g.fillStyle = '#e53935';
@@ -568,23 +520,13 @@
     //  НЕБО
     // ============================================================
     const skyGeo = new THREE.SphereGeometry(280, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
-    const skyMat = new THREE.MeshBasicMaterial({
-      map: skyTex,
-      side: THREE.BackSide,
-      fog: false,
-      depthWrite: false
-    });
+    const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false });
     const skyDome = new THREE.Mesh(skyGeo, skyMat);
     skyDome.renderOrder = -1;
     scene.add(skyDome);
 
     const skyBottomGeo = new THREE.SphereGeometry(280, 32, 8, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5);
-    const skyBottomMat = new THREE.MeshBasicMaterial({
-      color: FOG_COLOR,
-      side: THREE.BackSide,
-      fog: false,
-      depthWrite: false
-    });
+    const skyBottomMat = new THREE.MeshBasicMaterial({ color: FOG_COLOR, side: THREE.BackSide, fog: false, depthWrite: false });
     const skyBottom = new THREE.Mesh(skyBottomGeo, skyBottomMat);
     skyBottom.renderOrder = -1;
     scene.add(skyBottom);
@@ -613,18 +555,10 @@
     //  ВОРОНКИ
     // ============================================================
     const craterMaterial = new THREE.MeshBasicMaterial({
-      map: craterTex,
-      transparent: true,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1
+      map: craterTex, transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
     });
-
-    const craterRimMat = new THREE.MeshStandardMaterial({
-      color: 0x4a3520,
-      roughness: 1
-    });
+    const craterRimMat = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 1 });
 
     const craterPositions = [
       [-40, -20, 3.5], [-38, 20, 4.2], [40, -20, 3.8], [38, 22, 4.0],
@@ -634,19 +568,13 @@
     ];
 
     for (const [cx, cz, cr] of craterPositions) {
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(cr * 2, cr * 2),
-        craterMaterial
-      );
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(cr * 2, cr * 2), craterMaterial);
       plane.rotation.x = -Math.PI / 2;
       plane.position.set(cx, 0.015, cz);
       plane.renderOrder = 0;
       scene.add(plane);
 
-      const rim = new THREE.Mesh(
-        new THREE.TorusGeometry(cr, 0.18, 4, 20),
-        craterRimMat
-      );
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(cr, 0.18, 4, 20), craterRimMat);
       rim.rotation.x = Math.PI / 2;
       rim.position.set(cx, 0.06, cz);
       scene.add(rim);
@@ -659,18 +587,14 @@
           new THREE.DodecahedronGeometry(rockSize),
           new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 1, flatShading: true })
         );
-        rock.position.set(
-          cx + Math.cos(ang) * rr,
-          rockSize * 0.5,
-          cz + Math.sin(ang) * rr
-        );
+        rock.position.set(cx + Math.cos(ang) * rr, rockSize * 0.5, cz + Math.sin(ang) * rr);
         rock.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
         scene.add(rock);
       }
     }
 
     // ============================================================
-    //  ОКОПЫ / МЕШКИ С ПЕСКОМ
+    //  ОКОПЫ
     // ============================================================
     function addSandbagWall(x, z, w, d, h) {
       const tex = sandbagTex.clone();
@@ -691,7 +615,7 @@
     addSandbagWall(-HALF_W - 0.5, 0, 1.2, HALF_D * 2, 3.0);
     addSandbagWall(HALF_W + 0.5, 0, 1.2, HALF_D * 2, 3.0);
 
-    function addTrenchSandbagRow(x, z, w, d, h, rotY = 0) {
+    function addTrenchSandbagRow(x, z, w, d, h) {
       const seg = 2.4;
       const len = Math.max(w, d);
       const count = Math.max(1, Math.round(len / seg));
@@ -701,8 +625,7 @@
         const sz = (d >= w) ? z - d / 2 + t * d : z;
         const bagW = (w > d) ? seg * 0.95 : 1.2;
         const bagD = (w > d) ? 1.2 : seg * 0.95;
-        const bagH = h * (0.85 + Math.random() * 0.3);
-        addSandbagWall(sx, sz, bagW, bagD, bagH);
+        addSandbagWall(sx, sz, bagW, bagD, h * (0.85 + Math.random() * 0.3));
       }
     }
 
@@ -762,20 +685,14 @@
       return mesh;
     }
 
-    addCrate(-17.5, -18.5, 1.7);
-    addCrate(-15.6, -19.0, 1.3);
-    addCrate(20.0, 15.5, 1.5);
-    addCrate(18.7, 17.3, 1.2);
-    addCrate(-33.0, 19.5, 1.7);
-    addCrate(34.5, -18.0, 1.4);
+    addCrate(-17.5, -18.5, 1.7); addCrate(-15.6, -19.0, 1.3);
+    addCrate(20.0, 15.5, 1.5);  addCrate(18.7, 17.3, 1.2);
+    addCrate(-33.0, 19.5, 1.7); addCrate(34.5, -18.0, 1.4);
     addCrate(35.8, -16.5, 1.1);
 
-    function addPillar(x, z, h = 5, color = 0x8a5a2a) {
+    function addPillar(x, z, h = 5) {
       const pillarMat = new THREE.MeshStandardMaterial({
-        map: obstacleTex.clone(),
-        color: 0x6a5a3a,
-        roughness: 0.9,
-        metalness: 0.2
+        map: obstacleTex.clone(), color: 0x6a5a3a, roughness: 0.9, metalness: 0.2
       });
       pillarMat.map.needsUpdate = true;
       pillarMat.map.wrapS = pillarMat.map.wrapT = THREE.RepeatWrapping;
@@ -787,14 +704,9 @@
       scene.add(body);
     }
 
-    addPillar(-44.5, -22.5, 5.5, 0x8a5a2a);
-    addPillar(44.5, -22.5, 5.5, 0x8a5a2a);
-    addPillar(-44.5, 22.5, 5.5, 0x8a5a2a);
-    addPillar(44.5, 22.5, 5.5, 0x8a5a2a);
+    addPillar(-44.5, -22.5, 5.5); addPillar(44.5, -22.5, 5.5);
+    addPillar(-44.5, 22.5, 5.5);  addPillar(44.5, 22.5, 5.5);
 
-    // ============================================================
-    //  ЗАБОРНЫЕ СТОЛБЫ
-    // ============================================================
     function addFencePost(x, z) {
       const postMat = new THREE.MeshStandardMaterial({ color: 0x3a2618, roughness: 1 });
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 2.4, 6), postMat);
@@ -817,32 +729,21 @@
     //  ДАЛЬНИЕ СТОЛБЫ ДЫМА
     // ============================================================
     const smokeMat = new THREE.MeshBasicMaterial({
-      map: smokeTex,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      fog: true
+      map: smokeTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true
     });
 
     function addSmokeColumn(x, z, h = 22, w = 6) {
       const geo = new THREE.PlaneGeometry(w, h);
       const p1 = new THREE.Mesh(geo, smokeMat);
-      p1.position.set(x, h / 2, z);
-      scene.add(p1);
+      p1.position.set(x, h / 2, z); scene.add(p1);
       const p2 = new THREE.Mesh(geo, smokeMat);
-      p2.position.set(x, h / 2, z);
-      p2.rotation.y = Math.PI / 2;
-      scene.add(p2);
+      p2.position.set(x, h / 2, z); p2.rotation.y = Math.PI / 2; scene.add(p2);
     }
 
-    addSmokeColumn(-90, -40, 26, 9);
-    addSmokeColumn(80, -55, 22, 7);
-    addSmokeColumn(-70, 60, 24, 8);
-    addSmokeColumn(95, 45, 28, 10);
-    addSmokeColumn(-120, 10, 30, 11);
-    addSmokeColumn(120, -10, 26, 9);
-    addSmokeColumn(-40, -90, 20, 7);
-    addSmokeColumn(30, 95, 24, 8);
+    addSmokeColumn(-90, -40, 26, 9); addSmokeColumn(80, -55, 22, 7);
+    addSmokeColumn(-70, 60, 24, 8);  addSmokeColumn(95, 45, 28, 10);
+    addSmokeColumn(-120, 10, 30, 11); addSmokeColumn(120, -10, 26, 9);
+    addSmokeColumn(-40, -90, 20, 7); addSmokeColumn(30, 95, 24, 8);
 
     // ============================================================
     //  ОСВЕЩЕНИЕ
@@ -864,12 +765,10 @@
     scene.add(keyLight);
 
     const fillLight = new THREE.DirectionalLight(0x6688cc, 0.35);
-    fillLight.position.set(-40, 30, -50);
-    scene.add(fillLight);
+    fillLight.position.set(-40, 30, -50); scene.add(fillLight);
 
     const rimLight = new THREE.DirectionalLight(0xff6a2a, 0.3);
-    rimLight.position.set(0, -25, 0);
-    scene.add(rimLight);
+    rimLight.position.set(0, -25, 0); scene.add(rimLight);
 
     // ============================================================
     //  МОДЕЛЬ ОРУЖИЯ
@@ -884,19 +783,16 @@
       new THREE.MeshStandardMaterial({ color: 0x2a2a34, roughness: 0.4, metalness: 0.7 })
     );
     gunBarrel.position.set(0, 0.06, 0.65);
-
     const gunHandle = new THREE.Mesh(
       new THREE.BoxGeometry(0.14, 0.35, 0.2),
       new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.7 })
     );
     gunHandle.position.set(0, -0.25, -0.2);
-
     const magazine = new THREE.Mesh(
       new THREE.BoxGeometry(0.12, 0.3, 0.15),
       new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.7 })
     );
     magazine.position.set(0, -0.2, 0.1);
-
     const hand = new THREE.Mesh(
       new THREE.BoxGeometry(0.2, 0.14, 0.4),
       new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.8 })
@@ -914,25 +810,11 @@
 
     const WEAPON_POS_HIP = new THREE.Vector3(0.32, -0.28, -0.5);
     const WEAPON_POS_ADS = new THREE.Vector3(0.0, -0.14, -0.32);
-
     weaponGroup.position.copy(WEAPON_POS_HIP);
     weaponGroup.rotation.set(0, -0.08, 0.05);
 
     // ============================================================
-    //  ТЕКСТУРЫ ЛИЦ ВРАГОВ — С FALLBACK НА putin.jpg
-    // ============================================================
-    //  По умолчанию ВСЕ типы врагов используют ОДНУ картинку
-    //  ./putin.jpg — точно как было раньше.
-    //
-    //  Хочешь уникальную картинку для конкретного типа — просто
-    //  положи рядом файл с одним из имён ниже. Игра сама его
-    //  подхватит. Если файла нет — откат на putin.jpg.
-    //
-    //  Опциональные замены:
-    //    ./enemy_runner.jpg       — только для бегунов
-    //    ./enemy_shooter.jpg      — только для стрелков
-    //    ./enemy_brute.jpg        — только для бугаёв
-    //    ./enemy_tactician.jpg    — только для тактиков
+    //  КАРТИНКИ ЛИЦ — ЕДИНЫЙ putin.jpg + опциональные override
     // ============================================================
     const FACE_IMAGE_DEFAULT = './putin.jpg';
     const FACE_IMAGE_OVERRIDES = {
@@ -946,116 +828,224 @@
     textureLoader.setCrossOrigin('anonymous');
 
     const FALLBACK_COLORS = {
-      runner: 0xbf4654,
-      shooter: 0xc47b21,
-      brute: 0x8d3040,
-      tactician: 0x3b7a3b
+      runner: 0xbf4654, shooter: 0xc47b21, brute: 0x8d3040, tactician: 0x3b7a3b
     };
     const EMISSIVE_COLORS = {
-      runner: 0x330810,
-      shooter: 0x3a1e00,
-      brute: 0x2a0810,
-      tactician: 0x0e2a0e
+      runner: 0x330810, shooter: 0x3a1e00, brute: 0x2a0810, tactician: 0x0e2a0e
     };
 
-    // Общая базовая текстура (грузится всегда)
-    let defaultFaceData = null; // { tex, aspect }
+    // Текстуры лиц по типам
+    const faceTextures = { runner: null, shooter: null, brute: null, tactician: null };
+    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
 
-    // Кэш загруженных текстур по пути
-    const textureCache = {}; // path -> Promise<{tex, aspect} | null>
-
+    const textureCache = {};
     function loadFaceTexture(path) {
       if (textureCache[path]) return textureCache[path];
       const p = new Promise((resolve) => {
-        textureLoader.load(
-          path,
-          (tex) => {
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-            tex.anisotropy = 4;
-            tex.minFilter = THREE.LinearMipmapLinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            let aspect = 1;
-            if (tex.image && tex.image.width && tex.image.height) {
-              aspect = tex.image.width / tex.image.height;
-            }
-            console.log(`[Masked Merc] Лицо загружено: ${path}`);
-            resolve({ tex, aspect });
-          },
-          undefined,
-          () => {
-            // Тихо — это ожидаемое поведение, если файла нет
-            resolve(null);
-          }
-        );
+        textureLoader.load(path, (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.anisotropy = 4;
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          let aspect = 1;
+          if (tex.image && tex.image.width && tex.image.height) aspect = tex.image.width / tex.image.height;
+          console.log(`[Masked Merc] Лицо загружено: ${path}`);
+          resolve({ tex, aspect });
+        }, undefined, () => resolve(null));
       });
       textureCache[path] = p;
       return p;
     }
 
-    // Итоговые текстуры по типам: заполним после загрузки
-    const faceTextures = {
-      runner: null,
-      shooter: null,
-      brute: null,
-      tactician: null
-    };
-
-    const enemyRadii = { runner: 1.2, shooter: 1.3, brute: 2.1, tactician: 1.4 };
-
-    // Шаг 1: загружаем putin.jpg и сразу назначаем всем типам
-    const loadDefaultPromise = loadFaceTexture(FACE_IMAGE_DEFAULT).then((data) => {
+    // Шаг 1: putin.jpg → все типы
+    loadFaceTexture(FACE_IMAGE_DEFAULT).then((data) => {
       if (data) {
-        defaultFaceData = data;
-        for (const t of Object.keys(faceTextures)) {
-          faceTextures[t] = data;
-        }
-        // Догоняем уже заспавненных врагов
-        for (const e of enemies) {
-          if (!e.facePlane) attachFaceToEnemy(e);
-        }
+        for (const t of Object.keys(faceTextures)) faceTextures[t] = data;
+        for (const e of enemies) if (!e.facePlane) attachFaceToEnemy(e);
       } else {
-        console.warn('[Masked Merc] Не удалось загрузить', FACE_IMAGE_DEFAULT,
-          '— враги будут без лиц. Проверь, что файл лежит рядом с index.html.');
+        console.warn('[Masked Merc] Не удалось загрузить', FACE_IMAGE_DEFAULT);
       }
-      return data;
     });
 
-    // Шаг 2: пытаемся загрузить опциональные override-картинки.
-    // Для каждого типа: если файл есть — заменяем, если нет — остаётся putin.jpg.
+    // Шаг 2: опциональные override-картинки
     for (const type in FACE_IMAGE_OVERRIDES) {
-      const overridePath = FACE_IMAGE_OVERRIDES[type];
-      loadFaceTexture(overridePath).then((data) => {
-        if (!data) return; // Нет файла — используем putin.jpg (уже назначено)
+      loadFaceTexture(FACE_IMAGE_OVERRIDES[type]).then((data) => {
+        if (!data) return;
         faceTextures[type] = data;
-        // Догружаем уже заспавненным врагам этого типа, если у них
-        // старая (putin) текстура — заменяем
         for (const e of enemies) {
-          if (e.type === type && e.facePlane) {
+          if (e.type !== type) continue;
+          if (e.facePlane) {
             const oldTex = e.facePlane.material.map;
             if (oldTex !== data.tex) {
               scene.remove(e.facePlane);
               e.facePlane = null;
             }
           }
-          if (e.type === type && !e.facePlane) attachFaceToEnemy(e);
+          if (!e.facePlane) attachFaceToEnemy(e);
         }
       });
     }
 
-    const enemyMats = {
-      runner:    new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.runner,    emissive: EMISSIVE_COLORS.runner,    roughness: 0.8 }),
-      shooter:   new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.shooter,   emissive: EMISSIVE_COLORS.shooter,   roughness: 0.8 }),
-      brute:     new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.brute,     emissive: EMISSIVE_COLORS.brute,     roughness: 0.8 }),
-      tactician: new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS.tactician, emissive: EMISSIVE_COLORS.tactician, roughness: 0.7, metalness: 0.2 })
+    // ============================================================
+    //  ЧЕЛОВЕКОПОДОБНЫЕ МОДЕЛИ ВРАГОВ
+    // ============================================================
+    //  Каждый враг — группа из примитивов: голова (сфера),
+    //  торс (бокс), две руки, две ноги. Все части одного цвета
+    //  тела врага, с эмиссией под тон типа. Лицо (billboard
+    //  с картинкой) ставится отдельно, как раньше.
+    //
+    //  h — общая высота (примерно как раньше y-координата),
+    //  r — радиус для коллизий (оставлен прежним).
+    // ============================================================
+    function buildHumanoidMesh(type) {
+      const colors = FALLBACK_COLORS;
+      const emissives = EMISSIVE_COLORS;
+      const bodyColor = colors[type];
+      const emissiveColor = emissives[type];
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: bodyColor,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.6,
+        roughness: 0.85
+      });
+      const headMat = new THREE.MeshStandardMaterial({
+        color: bodyColor,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.5,
+        roughness: 0.7
+      });
+      const limbMat = new THREE.MeshStandardMaterial({
+        color: bodyColor,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.4,
+        roughness: 0.9
+      });
+
+      const group = new THREE.Group();
+
+      // --- Пропорции зависят от типа ---
+      // runner и shooter — обычные, brute — крупнее, tactician — чуть стройнее
+      let scale = 1;
+      let shoulders = 0.85;
+      if (type === "brute")     { scale = 1.35; shoulders = 1.15; }
+      if (type === "tactician") { scale = 1.05; shoulders = 0.85; }
+      if (type === "shooter")   { scale = 1.0;  shoulders = 0.9;  }
+      if (type === "runner")    { scale = 0.95; shoulders = 0.75; }
+
+      // --- Торс ---
+      const torsoW = 0.75 * scale * shoulders;
+      const torsoH = 1.2 * scale;
+      const torsoD = 0.45 * scale;
+      const torso = new THREE.Mesh(
+        new THREE.BoxGeometry(torsoW, torsoH, torsoD),
+        bodyMat
+      );
+      torso.position.y = 1.6 * scale;
+      torso.castShadow = true;
+      torso.receiveShadow = true;
+      group.add(torso);
+
+      // --- Голова ---
+      const headR = 0.32 * scale;
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(headR, 12, 10),
+        headMat
+      );
+      head.position.y = 1.6 * scale + torsoH / 2 + headR * 0.95;
+      head.castShadow = true;
+      head.receiveShadow = true;
+      group.add(head);
+
+      // --- Руки ---
+      const armLen = 1.15 * scale;
+      const armW = 0.18 * scale;
+      const armD = 0.18 * scale;
+
+      const armL = new THREE.Mesh(
+        new THREE.BoxGeometry(armW, armLen, armD),
+        limbMat
+      );
+      armL.position.set(-(torsoW / 2 + armW / 2 + 0.02), 1.6 * scale - armLen / 2 + 0.15 * scale, 0);
+      armL.castShadow = true;
+      group.add(armL);
+
+      const armR = new THREE.Mesh(
+        new THREE.BoxGeometry(armW, armLen, armD),
+        limbMat
+      );
+      armR.position.set((torsoW / 2 + armW / 2 + 0.02), 1.6 * scale - armLen / 2 + 0.15 * scale, 0);
+      armR.castShadow = true;
+      group.add(armR);
+
+      // --- Ноги ---
+      const legLen = 1.0 * scale;
+      const legW = 0.22 * scale;
+      const legD = 0.22 * scale;
+
+      const legL = new THREE.Mesh(
+        new THREE.BoxGeometry(legW, legLen, legD),
+        limbMat
+      );
+      legL.position.set(-torsoW * 0.28, legLen / 2, 0);
+      legL.castShadow = true;
+      group.add(legL);
+
+      const legR = new THREE.Mesh(
+        new THREE.BoxGeometry(legW, legLen, legD),
+        limbMat
+      );
+      legR.position.set(torsoW * 0.28, legLen / 2, 0);
+      legR.castShadow = true;
+      group.add(legR);
+
+      // Ссылки на части для анимации (лёгкое покачивание при ходьбе)
+      group.userData.limbs = {
+        armL, armR, legL, legR,
+        baseArmL: armL.position.clone(),
+        baseArmR: armR.position.clone(),
+        baseLegL: legL.position.clone(),
+        baseLegR: legR.position.clone()
+      };
+
+      return group;
+    }
+
+    const enemyMeshes = {
+      runner:    buildHumanoidMesh("runner"),
+      shooter:   buildHumanoidMesh("shooter"),
+      brute:     buildHumanoidMesh("brute"),
+      tactician: buildHumanoidMesh("tactician")
     };
 
-    const enemyGeos = {
-      runner:    new THREE.CapsuleGeometry(1.2, 1.2, 6, 12),
-      shooter:   new THREE.CapsuleGeometry(1.3, 1.2, 6, 12),
-      brute:     new THREE.CapsuleGeometry(2.1, 1.6, 6, 12),
-      tactician: new THREE.CapsuleGeometry(1.4, 1.3, 6, 12)
-    };
+    // Шаблон для клонирования: клонируем группы при спавне
+    function cloneHumanoid(type) {
+      const src = enemyMeshes[type];
+      const clone = src.clone(true);
+      // Клонировать нужно и userData.limbs
+      const limbs = src.userData.limbs;
+      const cLimbs = {
+        armL: clone.children.find(c => c === null) // временно
+      };
+      // Проще: собираем заново по индексам, потому что порядок сохранён
+      // children: [torso, head, armL, armR, legL, legR]
+      const [torso, head, armL, armR, legL, legR] = clone.children;
+      clone.userData.limbs = {
+        armL, armR, legL, legR,
+        baseArmL: armL.position.clone(),
+        baseArmR: armR.position.clone(),
+        baseLegL: legL.position.clone(),
+        baseLegR: legR.position.clone()
+      };
+      clone.traverse(obj => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = true;
+        }
+      });
+      return clone;
+    }
 
     function attachFaceToEnemy(enemy) {
       if (!enemy) return;
@@ -1064,16 +1054,13 @@
       if (enemy.facePlane) return;
 
       const r = enemyRadii[enemy.type] || 1.3;
-      const h = r * 1.7;
+      const h = r * 1.15;
       const w = h * (data.aspect || 1);
 
       const geo = new THREE.PlaneGeometry(w, h);
       const mat = new THREE.MeshBasicMaterial({
-        map: data.tex,
-        transparent: true,
-        toneMapped: false,
-        side: THREE.DoubleSide,
-        depthWrite: true
+        map: data.tex, transparent: true, toneMapped: false,
+        side: THREE.DoubleSide, depthWrite: true
       });
 
       const plane = new THREE.Mesh(geo, mat);
@@ -1094,10 +1081,11 @@
       const dh = Math.hypot(dx, dz) || 1;
       const ux = dx / dh, uz = dz / dh;
 
+      // Лицо чуть выше головы
       plane.position.set(
-        enemy.x + ux * (r + 0.06),
-        enemy.y + 0.15,
-        enemy.z + uz * (r + 0.06)
+        enemy.x + ux * (r * 0.35 + 0.1),
+        enemy.y + 0.85,
+        enemy.z + uz * (r * 0.35 + 0.1)
       );
 
       plane.lookAt(camera.position.x, plane.position.y, camera.position.z);
@@ -1112,7 +1100,6 @@
     const tacticianTracerMat = new THREE.MeshBasicMaterial({ color: 0x66ffaa });
 
     const pickupGeo = new THREE.BoxGeometry(2.2, 0.9, 1.4);
-
     const pickupMats = {
       smg:      new THREE.MeshStandardMaterial({ map: pickupTextures.smg,      emissive: 0x4a3400, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
       shotgun:  new THREE.MeshStandardMaterial({ map: pickupTextures.shotgun,  emissive: 0x4a1c00, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 }),
@@ -1123,9 +1110,7 @@
       medkit:   new THREE.MeshStandardMaterial({ map: pickupTextures.medkit,   emissive: 0x0d3d13, emissiveIntensity: 0.6, roughness: 0.5, metalness: 0.2 })
     };
 
-    const weaponIndexByType = {
-      smg: 1, shotgun: 2, assault: 3, sniper: 4, minigun: 5, revolver: 6
-    };
+    const weaponIndexByType = { smg: 1, shotgun: 2, assault: 3, sniper: 4, minigun: 5, revolver: 6 };
 
     const weapons = [
       { name: "Пистолет",           damage: 14, fireDelay: 0.22, speed: 80,  pellets: 1, spread: 0.015 },
@@ -1138,19 +1123,37 @@
     ];
 
     // ============================================================
-    //  ЗВУКИ
+    //  ЗВУКИ — попадание, урон игрока, выстрел
+    //  + РАЗНЫЕ ЗВУКИ ПОПАДАНИЯ ДЛЯ КАЖДОГО ТИПА ВРАГА
     // ============================================================
+    //  Базовый: dvigj.mp3 — играет при попадании во ВСЕХ, если
+    //  для конкретного типа нет своей картинки.
+    //
+    //  Опционально (если файл есть — играет вместо dvigj.mp3):
+    //    ./hit_runner.mp3
+    //    ./hit_shooter.mp3
+    //    ./hit_brute.mp3
+    //    ./hit_tactician.mp3
+    // ============================================================
+    const HIT_SOUND_BASE = { path: './dvigj.mp3', volume: 0.6, poolSize: 6 };
+
+    // Опциональные override-звуки попадания по типу врага.
+    const HIT_SOUND_OVERRIDES = {
+      runner:    { path: './hit_runner.mp3',    volume: 0.6, poolSize: 4 },
+      shooter:   { path: './hit_shooter.mp3',   volume: 0.6, poolSize: 4 },
+      brute:     { path: './hit_brute.mp3',     volume: 0.7, poolSize: 4 },
+      tactician: { path: './hit_tactician.mp3', volume: 0.6, poolSize: 4 }
+    };
+
     const SOUNDS = {
-      hit:   { path: './dvigj.mp3', volume: 0.6, poolSize: 6 },
       hurt:  { path: './hurt.mp3',  volume: 0.7, poolSize: 3 },
       shoot: { path: './shoot.mp3', volume: 0.5, poolSize: 4 }
     };
 
-    const soundPools = {};
+    const soundPools = {}; // { name: { pool, index, volume } }
     let audioUnlocked = false;
 
-    for (const name in SOUNDS) {
-      const cfg = SOUNDS[name];
+    function createPool(name, cfg) {
       const pool = [];
       for (let i = 0; i < cfg.poolSize; i++) {
         const a = new Audio(cfg.path);
@@ -1161,6 +1164,34 @@
       soundPools[name] = { pool, index: 0, volume: cfg.volume };
     }
 
+    // Создаём пул для базового попадания
+    createPool('hit', HIT_SOUND_BASE);
+
+    // Для опциональных звуков — сначала пробуем загрузить, потом создаём пул
+    function tryCreateOptionalPool(name, cfg) {
+      const probe = new Audio(cfg.path);
+      probe.preload = 'auto';
+      // Проверяем доступность через события loadeddata/error
+      probe.addEventListener('loadeddata', () => {
+        createPool(name, cfg);
+        // Если звук уже разблокирован — применим к нему громкость
+        if (audioUnlocked) {
+          for (const a of soundPools[name].pool) a.volume = cfg.volume;
+        }
+      }, { once: true });
+      probe.addEventListener('error', () => {
+        // Файла нет — оставим fallback на 'hit'
+      }, { once: true });
+    }
+
+    for (const type in HIT_SOUND_OVERRIDES) {
+      tryCreateOptionalPool('hit_' + type, HIT_SOUND_OVERRIDES[type]);
+    }
+
+    // Урон игроку и выстрел
+    createPool('hurt', SOUNDS.hurt);
+    createPool('shoot', SOUNDS.shoot);
+
     function unlockAudio() {
       if (audioUnlocked) return;
       audioUnlocked = true;
@@ -1170,13 +1201,8 @@
           try {
             a.volume = 0;
             const p = a.play();
-            const reset = () => {
-              a.pause();
-              a.currentTime = 0;
-              a.volume = sp.volume;
-            };
-            if (p && p.then) p.then(reset).catch(reset);
-            else reset();
+            const reset = () => { a.pause(); a.currentTime = 0; a.volume = sp.volume; };
+            if (p && p.then) p.then(reset).catch(reset); else reset();
           } catch (e) {}
         }
       }
@@ -1195,7 +1221,14 @@
       } catch (e) {}
     }
 
-    function playHitSound()   { playSound('hit'); }
+    // Играем попадание с учётом типа врага.
+    // Если для типа есть свой звук — играет он, иначе dvigj.mp3.
+    function playHitSoundForType(type) {
+      const specific = 'hit_' + type;
+      if (soundPools[specific]) playSound(specific);
+      else playSound('hit');
+    }
+
     function playHurtSound()  { playSound('hurt'); }
     function playShootSound() { playSound('shoot'); }
 
@@ -1245,36 +1278,25 @@
 
     function updateDamageEffect(dt) {
       timeSinceDamage += dt;
-      if (timeSinceDamage > 0.2) {
-        damageLevel = Math.max(0, damageLevel - dt / DAMAGE_DECAY_TIME * 1.3);
-      }
+      if (timeSinceDamage > 0.2) damageLevel = Math.max(0, damageLevel - dt / DAMAGE_DECAY_TIME * 1.3);
       for (let i = cracks.length - 1; i >= 0; i--) {
         cracks[i].ttl -= dt;
         if (cracks[i].ttl <= 0) cracks.splice(i, 1);
       }
-      if (damageLevel > 0.001) {
-        damageOverlay.style.opacity = String(damageLevel * 0.85);
-      } else {
-        damageOverlay.style.opacity = "0";
-      }
+      if (damageLevel > 0.001) damageOverlay.style.opacity = String(damageLevel * 0.85);
+      else damageOverlay.style.opacity = "0";
     }
 
     function drawCracks() {
       if (cracks.length === 0) return;
       ctx.save();
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (const crack of cracks) {
         const lifeRatio = crack.ttl / crack.maxTtl;
         const alpha = Math.min(1, lifeRatio * 1.5) * 0.9;
         for (let pass = 0; pass < 2; pass++) {
-          if (pass === 0) {
-            ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
-            ctx.lineWidth = 4;
-          } else {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.55})`;
-            ctx.lineWidth = 1.4;
-          }
+          if (pass === 0) { ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`; ctx.lineWidth = 4; }
+          else            { ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.55})`; ctx.lineWidth = 1.4; }
           for (const [x1, y1, x2, y2] of crack.branches) {
             ctx.beginPath();
             const mx = (x1 + x2) / 2 + (Math.sin(crack.seed + x1) * 6);
@@ -1297,7 +1319,6 @@
     let betweenWaveTimer = 1;
 
     const EYE_HEIGHT = 2.1;
-
     const JUMP_HEIGHT = 4;
     const JUMP_GRAVITY = 7;
     const JUMP_VELOCITY = Math.sqrt(2 * JUMP_GRAVITY * JUMP_HEIGHT);
@@ -1389,9 +1410,7 @@
 
     function hitsObstacleOrBounds(x, z, r) {
       if (x - r < -HALF_W || x + r > HALF_W || z - r < -HALF_D || z + r > HALF_D) return true;
-      for (const o of obstacles) {
-        if (circleRectCollideXZ(x, z, r, o)) return true;
-      }
+      for (const o of obstacles) if (circleRectCollideXZ(x, z, r, o)) return true;
       return false;
     }
 
@@ -1458,9 +1477,9 @@
         hp = 18 + wave * 5; speed = 8 + wave * 0.3; damage = 10; scoreValue = 10; y = enemyY.runner;
       }
 
-      const mesh = new THREE.Mesh(enemyGeos[type], enemyMats[type]);
+      // Клонируем человекообразную модель
+      const mesh = cloneHumanoid(type);
       mesh.position.set(x, y, z);
-      mesh.castShadow = true;
       scene.add(mesh);
 
       const enemy = {
@@ -1469,11 +1488,28 @@
         strafeDir: Math.random() < 0.5 ? -1 : 1,
         facePlane: null,
         burstLeft: 0, burstCooldown: 0, dodgeCooldown: 0,
-        coverTarget: null, retreatMode: false
+        coverTarget: null, retreatMode: false,
+        // Анимация ходьбы
+        walkPhase: Math.random() * Math.PI * 2
       };
 
       attachFaceToEnemy(enemy);
       enemies.push(enemy);
+    }
+
+    // Анимация ног/рук врага (лёгкое покачивание при движении)
+    function animateEnemyWalk(enemy, dt, speedFactor) {
+      if (!enemy.mesh.userData.limbs) return;
+      const limbs = enemy.mesh.userData.limbs;
+      enemy.walkPhase += dt * 8 * speedFactor;
+      const amp = 0.22 * speedFactor;
+      const s = Math.sin(enemy.walkPhase);
+
+      limbs.armL.position.x = limbs.baseArmL.x;
+      limbs.armL.position.z = limbs.baseArmL.z + s * amp * 0.6;
+      limbs.armR.position.z = limbs.baseArmR.z - s * amp * 0.6;
+      limbs.legL.position.z = limbs.baseLegL.z - s * amp;
+      limbs.legR.position.z = limbs.baseLegR.z + s * amp;
     }
 
     function getForwardXZ() { return { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) }; }
@@ -1486,15 +1522,12 @@
     function fireWeapon() {
       const weapon = weapons[player.weapon];
       player.fireCooldown = weapon.fireDelay;
-
       playShootSound();
 
       const direction = new THREE.Vector3();
       camera.getWorldDirection(direction);
-
       const muzzlePos = new THREE.Vector3();
       gunBarrel.getWorldPosition(muzzlePos);
-
       const spreadMul = isAiming ? 0.35 : 1;
 
       for (let i = 0; i < weapon.pellets; i++) {
@@ -1543,12 +1576,10 @@
     const mouseLookAccum = { x: 0, y: 0 };
 
     function findCoverPoint(enemy) {
-      let best = null;
-      let bestScore = Infinity;
+      let best = null, bestScore = Infinity;
       for (const o of obstacles) {
         if (o.w < 3 || o.d < 3) continue;
-        const toEnemyX = enemy.x - o.x;
-        const toEnemyZ = enemy.z - o.z;
+        const toEnemyX = enemy.x - o.x, toEnemyZ = enemy.z - o.z;
         const len = Math.hypot(toEnemyX, toEnemyZ) || 1;
         const dirX = toEnemyX / len, dirZ = toEnemyZ / len;
         const coverDist = Math.max(o.w, o.d) * 0.7 + 2;
@@ -1557,12 +1588,9 @@
         if (hitsObstacleOrBounds(tx, tz, enemy.r)) continue;
         const d = Math.hypot(tx - enemy.x, tz - enemy.z);
         if (d > 22) continue;
-        const midX = (tx + player.x) / 2;
-        const midZ = (tz + player.z) / 2;
+        const midX = (tx + player.x) / 2, midZ = (tz + player.z) / 2;
         let covered = false;
-        for (const o2 of obstacles) {
-          if (circleRectCollideXZ(midX, midZ, 1.5, o2)) { covered = true; break; }
-        }
+        for (const o2 of obstacles) if (circleRectCollideXZ(midX, midZ, 1.5, o2)) { covered = true; break; }
         if (!covered) continue;
         if (d < bestScore) { bestScore = d; best = { x: tx, z: tz }; }
       }
@@ -1590,8 +1618,7 @@
           const perpX = -uz, perpZ = ux;
           const sideTest = perpX * dxB + perpZ * dzB;
           const sgn = sideTest >= 0 ? 1 : -1;
-          mx += perpX * sgn;
-          mz += perpZ * sgn;
+          mx += perpX * sgn; mz += perpZ * sgn;
           dodging = true;
           e.dodgeCooldown = 0.35 + Math.random() * 0.25;
           break;
@@ -1604,13 +1631,10 @@
             e.coverTarget = findCoverPoint(e);
           }
           if (e.coverTarget) {
-            const cx = e.coverTarget.x - e.x;
-            const cz = e.coverTarget.z - e.z;
+            const cx = e.coverTarget.x - e.x, cz = e.coverTarget.z - e.z;
             const cl = Math.hypot(cx, cz) || 1;
             mx = cx / cl; mz = cz / cl;
-          } else {
-            mx = -nx; mz = -nz;
-          }
+          } else { mx = -nx; mz = -nz; }
         } else {
           if (dist > 26) { mx = nx; mz = nz; }
           else if (dist < 20) { mx = -nx; mz = -nz; }
@@ -1628,6 +1652,7 @@
       if (ml > 0.01) { mx /= ml; mz /= ml; }
 
       moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
+      animateEnemyWalk(e, dt, 1);
 
       if (dist < 45 && !e.retreatMode) {
         if (e.burstLeft === 0 && e.fireCooldown <= 0) {
@@ -1638,7 +1663,8 @@
         if (e.burstLeft > 0 && e.burstCooldown <= 0) {
           e.burstLeft--;
           e.burstCooldown = 0.14;
-          const targetY = EYE_HEIGHT, fromY = e.y;
+
+          const targetY = EYE_HEIGHT, fromY = e.y + 0.9;
           const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
           const tlen = Math.hypot(tdx, tdy, tdz) || 1;
           const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
@@ -1646,11 +1672,13 @@
           dir.y += (Math.random() - 0.5) * 0.04;
           dir.z += (Math.random() - 0.5) * 0.04;
           dir.normalize();
-          const bx = e.x + nx * (e.r + 0.5), bz = e.z + nz * (e.r + 0.5);
+
+          const bx = e.x + nx * (e.r * 0.5 + 0.5), bz = e.z + nz * (e.r * 0.5 + 0.5);
           const mesh = new THREE.Mesh(tracerGeo, tacticianTracerMat);
           mesh.position.set(bx, fromY, bz);
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
           scene.add(mesh);
+
           bullets.push({
             x: bx, y: fromY, z: bz,
             vx: dir.x * 38, vy: dir.y * 38, vz: dir.z * 38,
@@ -1673,9 +1701,7 @@
       if (player.jumping) {
         player.jumpVel -= JUMP_GRAVITY * dt;
         player.jumpOffset += player.jumpVel * dt;
-        if (player.jumpOffset <= 0) {
-          player.jumpOffset = 0; player.jumpVel = 0; player.jumping = false;
-        }
+        if (player.jumpOffset <= 0) { player.jumpOffset = 0; player.jumpVel = 0; player.jumping = false; }
       }
 
       if (mouseLookAccum.x !== 0 || mouseLookAccum.y !== 0) {
@@ -1701,8 +1727,7 @@
       if (inputLen > 1) { inputFwd /= inputLen; inputRight /= inputLen; }
 
       if (inputLen > 0.01) {
-        const fwd = getForwardXZ();
-        const right = getRightXZ();
+        const fwd = getForwardXZ(), right = getRightXZ();
         const dx = (fwd.x * inputFwd + right.x * inputRight) * player.speed * dt;
         const dz = (fwd.z * inputFwd + right.z * inputRight) * player.speed * dt;
         moveWithCollision(player, dx, dz);
@@ -1739,7 +1764,7 @@
           else { mx = -nz * e.strafeDir; mz = nx * e.strafeDir; }
 
           if (e.fireCooldown <= 0 && dist < 48) {
-            const targetY = EYE_HEIGHT, fromY = e.y;
+            const targetY = EYE_HEIGHT, fromY = e.y + 0.9;
             const tdx = player.x - e.x, tdy = targetY - fromY, tdz = player.z - e.z;
             const tlen = Math.hypot(tdx, tdy, tdz) || 1;
             const dir = new THREE.Vector3(tdx / tlen, tdy / tlen, tdz / tlen);
@@ -1747,11 +1772,13 @@
             dir.y += (Math.random() - 0.5) * 0.08;
             dir.z += (Math.random() - 0.5) * 0.08;
             dir.normalize();
-            const bx = e.x + nx * (e.r + 0.5), bz = e.z + nz * (e.r + 0.5);
+
+            const bx = e.x + nx * (e.r * 0.5 + 0.5), bz = e.z + nz * (e.r * 0.5 + 0.5);
             const mesh = new THREE.Mesh(tracerGeo, enemyTracerMat);
             mesh.position.set(bx, fromY, bz);
             mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
             scene.add(mesh);
+
             bullets.push({
               x: bx, y: fromY, z: bz,
               vx: dir.x * 28, vy: dir.y * 28, vz: dir.z * 28,
@@ -1760,8 +1787,11 @@
             e.fireCooldown = Math.max(0.7, 1.35 - wave * 0.03);
           }
           moveWithCollision(e, mx * e.speed * dt, mz * e.speed * dt);
+          animateEnemyWalk(e, dt, 1);
         } else {
+          // runner / brute — просто бегут на игрока
           moveWithCollision(e, nx * e.speed * dt, nz * e.speed * dt);
+          animateEnemyWalk(e, dt, 1.2);
         }
 
         e.mesh.position.set(e.x, e.y, e.z);
@@ -1793,10 +1823,11 @@
           for (let j = enemies.length - 1; j >= 0; j--) {
             const e = enemies[j];
             const dh = Math.hypot(b.x - e.x, b.z - e.z);
-            const dy = Math.abs(b.y - e.y);
-            if (dh < b.r + e.r && dy < e.y + 0.8) {
+            const dy = Math.abs(b.y - (e.y + 0.6));
+            if (dh < b.r + e.r && dy < e.r + 0.6) {
               e.hp -= b.damage;
-              playHitSound();
+              // >>> Здесь звук попадания зависит от типа врага
+              playHitSoundForType(e.type);
               scene.remove(b.mesh);
               bullets.splice(i, 1);
               removed = true;
@@ -1884,10 +1915,8 @@
       skyDome.position.set(camera.position.x, 0, camera.position.z);
       skyBottom.position.set(camera.position.x, 0, camera.position.z);
 
-      const fovScale =
-        Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5) /
-        Math.tan(THREE.MathUtils.degToRad(BASE_FOV) * 0.5);
-
+      const fovScale = Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5) /
+                       Math.tan(THREE.MathUtils.degToRad(BASE_FOV) * 0.5);
       const jumpDip = player.jumpOffset * 0.12;
       const bx = (WEAPON_POS_HIP.x + bobX) * (1 - adsBlend) + WEAPON_POS_ADS.x * adsBlend;
       const by = (WEAPON_POS_HIP.y + bobY) * (1 - adsBlend) + WEAPON_POS_ADS.y * adsBlend;
@@ -1909,7 +1938,7 @@
     const _projVec = new THREE.Vector3();
     function drawEnemyHealthBars() {
       for (const e of enemies) {
-        _projVec.set(e.x, e.y + e.r * 0.9 + 0.5, e.z);
+        _projVec.set(e.x, e.y + e.r * 0.9 + 1.1, e.z);
         _projVec.project(camera);
         if (_projVec.z > 1) continue;
         const sx = (_projVec.x * 0.5 + 0.5) * view.cssW;
@@ -1956,8 +1985,7 @@
 
       const barX = pad + 12, barY = pad + panelH - 18, barW = panelW - 24, barH = 10;
       const hpRatio = Math.max(0, player.hp / player.maxHp);
-      ctx.fillStyle = "#222";
-      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = "#222"; ctx.fillRect(barX, barY, barW, barH);
       ctx.fillStyle = hpRatio > 0.35 ? "#58d68d" : "#ff5d5d";
       ctx.fillRect(barX, barY, barW * hpRatio, barH);
 
@@ -1980,9 +2008,7 @@
       ctx.fillRect(cx + gap, cy - thickness/2, length, thickness);
       ctx.strokeRect(cx + gap, cy - thickness/2, length, thickness);
 
-      ctx.beginPath();
-      ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 1.5, 0, Math.PI * 2); ctx.fill();
     }
 
     function drawJoystick(start, current, radius, color) {
@@ -2017,10 +2043,8 @@
       }
       if (touch.lookId === null) {
          ctx.save();
-         ctx.globalAlpha = 0.15;
-         ctx.fillStyle = "#ffffff";
-         ctx.font = "bold 13px Arial";
-         ctx.textAlign = "center";
+         ctx.globalAlpha = 0.15; ctx.fillStyle = "#ffffff";
+         ctx.font = "bold 13px Arial"; ctx.textAlign = "center";
          ctx.fillText("ПРОВОДИТЕ ЗДЕСЬ ДЛЯ ОБЗОРА", view.cssW * 0.75, view.cssH * 0.5);
          ctx.restore();
       }
@@ -2155,11 +2179,9 @@
     function togglePause() {
       if (state === "playing") {
         state = "paused";
-        mouseDown = false;
-        isAiming = false;
+        mouseDown = false; isAiming = false;
         touch.fireBtnDown = false;
-        touch.moveId = null;
-        touch.lookId = null;
+        touch.moveId = null; touch.lookId = null;
         touch.moveVector = { x: 0, y: 0 };
         for (const k in keys) keys[k] = false;
         if (document.exitPointerLock) { try { document.exitPointerLock(); } catch (e) {} }
@@ -2189,9 +2211,7 @@
     document.addEventListener("pointerlockchange", () => {
       const wasLocked = pointerLocked;
       pointerLocked = document.pointerLockElement === sceneCanvas;
-      if (!isTouchDevice && wasLocked && !pointerLocked && state === "playing") {
-        togglePause();
-      }
+      if (!isTouchDevice && wasLocked && !pointerLocked && state === "playing") togglePause();
     });
 
     sceneCanvas.addEventListener("mousemove", (e) => {
@@ -2222,23 +2242,20 @@
     window.addEventListener("blur", () => { isAiming = false; mouseDown = false; });
 
     fireBtn.addEventListener("pointerdown", (e) => {
-      e.preventDefault(); 
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       touch.fireBtnDown = true;
       if (state === "menu" || state === "gameover") startGame();
     }, { passive: false });
 
     fireBtn.addEventListener("pointerup", (e) => {
-      e.preventDefault(); 
-      e.stopPropagation(); 
+      e.preventDefault(); e.stopPropagation();
       touch.fireBtnDown = false;
     }, { passive: false });
 
     fireBtn.addEventListener("pointercancel", () => { touch.fireBtnDown = false; });
 
     jumpBtn.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       tryJump();
     }, { passive: false });
 
@@ -2261,7 +2278,7 @@
 
     sceneCanvas.addEventListener("pointermove", (e) => {
       if (!isTouchDevice) return;
-      e.preventDefault(); 
+      e.preventDefault();
       if (e.pointerId === touch.moveId) {
         touch.moveCurrent = { x: e.clientX, y: e.clientY };
         updateTouchVectors();
@@ -2281,9 +2298,7 @@
         touch.moveId = null;
         touch.moveVector = { x: 0, y: 0 };
       }
-      if (e.pointerId === touch.lookId) {
-        touch.lookId = null;
-      }
+      if (e.pointerId === touch.lookId) touch.lookId = null;
     }
 
     sceneCanvas.addEventListener("pointerup", releasePointer);
