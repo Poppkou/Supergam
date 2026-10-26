@@ -5,147 +5,338 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Тень Ассасина</title>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: Georgia, 'Times New Roman', serif; color: #eee; touch-action: none; }
-  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  .hidden { display: none !important; }
+@font-face { font-family: 'Cormorant'; font-weight: 500; src: url(fonts/cormorant-garamond-cyrillic-500-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Cormorant'; font-weight: 500; src: url(fonts/cormorant-garamond-latin-500-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
+@font-face { font-family: 'Cormorant'; font-weight: 600; src: url(fonts/cormorant-garamond-cyrillic-600-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Cormorant'; font-weight: 600; src: url(fonts/cormorant-garamond-latin-600-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
+@font-face { font-family: 'Cormorant'; font-weight: 700; src: url(fonts/cormorant-garamond-cyrillic-700-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'Cormorant'; font-weight: 700; src: url(fonts/cormorant-garamond-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
+@font-face { font-family: 'RC'; font-weight: 400; src: url(fonts/roboto-condensed-cyrillic-400-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'RC'; font-weight: 400; src: url(fonts/roboto-condensed-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
+@font-face { font-family: 'RC'; font-weight: 500; src: url(fonts/roboto-condensed-cyrillic-500-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'RC'; font-weight: 500; src: url(fonts/roboto-condensed-latin-500-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
+@font-face { font-family: 'RC'; font-weight: 700; src: url(fonts/roboto-condensed-cyrillic-700-normal.woff2) format('woff2'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: 'RC'; font-weight: 700; src: url(fonts/roboto-condensed-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF,U+2000-206F; }
 
-  /* ---------- Меню ---------- */
-  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, rgba(30,20,15,.75), rgba(0,0,0,.95)); z-index: 20; padding: 16px; }
-  .logo { font-size: clamp(28px, 7vw, 64px); letter-spacing: .25em; color: #f3ead6; text-shadow: 0 0 20px #8a0f1f; text-align: center; }
-  .logo small { display: block; font-size: .3em; letter-spacing: .5em; color: #b3122a; margin-top: 6px; }
-  .menu-btn { margin: 6px; padding: 12px 28px; min-width: 220px; font: inherit; font-size: 18px; color: #f3ead6; background: rgba(120,12,28,.55);
-    border: 1px solid #c9a96e; border-radius: 3px; letter-spacing: .1em; }
-  .menu-btn:active { background: rgba(179,18,42,.9); }
-  .missions { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; width: min(960px, 100%); max-height: 62vh; overflow-y: auto; margin-top: 14px; }
-  .mcard { padding: 12px; border: 1px solid #6b5a3c; background: rgba(20,15,10,.8); border-radius: 4px; }
-  .mcard h3 { margin: 0 0 4px; font-size: 16px; color: #e9d7a8; }
-  .mcard p { margin: 0 0 8px; font-size: 13px; color: #bdb3a0; line-height: 1.3; }
-  .mcard.locked { opacity: .4; }
-  .mcard.done h3::after { content: ' ✔'; color: #6c6; }
-  .mcard button { width: 100%; padding: 8px; font: inherit; color: #fff; background: #7a0e1e; border: 1px solid #c9a96e; border-radius: 3px; }
-  .help { max-width: 760px; font-size: 14px; line-height: 1.5; color: #d8ccb4; background: rgba(0,0,0,.5); padding: 14px 18px; border: 1px solid #6b5a3c; max-height: 70vh; overflow-y: auto; }
-  .help b { color: #e9d7a8; }
+:root {
+  --ink: #f3ede1; --dim: rgba(243,237,225,.62); --gold: #d8b56c; --red: #d4202f; --glass: rgba(14,12,11,.38);
+  --line: rgba(243,237,225,.28); --serif: 'Cormorant', Georgia, serif; --sans: 'RC', 'Roboto Condensed', Arial, sans-serif;
+  --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: var(--ink); font-family: var(--sans); touch-action: none; }
+canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.hidden { display: none !important; }
+svg.i { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* ---------- HUD ---------- */
-  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
-  #health { position: absolute; top: 12px; left: 168px; display: flex; gap: 3px; }
-  #health .cell { width: 16px; height: 10px; border: 1px solid #ddd; background: #eee; transform: skewX(-20deg); }
-  #health .cell.empty { background: rgba(0,0,0,.4); }
-  #status { position: absolute; top: 28px; left: 168px; font-size: 13px; letter-spacing: .1em; }
-  #status.anon { color: #ddd; } #status.susp { color: #ffd54a; } #status.alert { color: #ff3b3b; }
-  #minimap { position: absolute; top: 8px; left: 8px; width: 150px; height: 150px; border-radius: 50%; border: 2px solid #c9a96e; background: rgba(0,0,0,.4); }
-  #objective { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 6px 14px; background: rgba(0,0,0,.55); border-left: 3px solid #b3122a;
-    font-size: 15px; max-width: 46vw; text-align: center; }
-  #objective .dist { color: #c9a96e; font-size: 12px; }
-  #hint { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); padding: 6px 12px; background: rgba(0,0,0,.55); font-size: 14px; max-width: 60vw; text-align: center; transition: opacity .4s; }
-  #toast { position: absolute; top: 34%; left: 50%; transform: translateX(-50%); font-size: clamp(22px, 5vw, 42px); letter-spacing: .2em; color: #f3ead6;
-    text-shadow: 0 0 12px #000, 0 0 30px #b3122a; text-align: center; transition: opacity .5s; opacity: 0; }
-  #flash { position: absolute; inset: 0; background: #b3122a; opacity: 0; transition: opacity .25s; }
-  #eagleTint { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(20,40,90,0) 40%, rgba(10,20,60,.55)); opacity: 0; transition: opacity .3s; }
-  #crosshair { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(255,255,255,.5); }
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+#vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45) 100%); }
+#eagleTint { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(40,70,160,0) 35%, rgba(8,14,40,.65)); opacity: 0; transition: opacity .35s; }
+#dmg { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(160,0,10,.6)); opacity: 0; transition: opacity .2s; }
+#lowhp { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(120,0,10,.45)); opacity: 0; animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.6); } }
+.bars::before, .bars::after { content: ''; position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height .3s; z-index: 2; }
+.bars::before { top: 0; } .bars::after { bottom: 0; }
+.bars.on::before, .bars.on::after { height: 9vh; }
+#detect { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-  /* ---------- Сенсорное управление ---------- */
-  #touch { position: fixed; inset: 0; z-index: 11; }
-  #stickBase { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(0,0,0,.2); pointer-events: none; }
-  #stickKnob { position: absolute; width: 56px; height: 56px; border-radius: 50%; background: rgba(243,234,214,.55); pointer-events: none; }
-  .tbtn { position: absolute; border-radius: 50%; border: 2px solid rgba(201,169,110,.85); background: rgba(20,12,8,.55); color: #f3ead6;
-    display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; line-height: 1.1; letter-spacing: .05em; }
-  .tbtn .ic { font-size: 22px; display: block; }
-  .tbtn.on { background: rgba(179,18,42,.75); }
-  .tbtn.ready { box-shadow: 0 0 16px 4px rgba(255,60,60,.9); border-color: #ff6060; }
-  .tbtn.warn { box-shadow: 0 0 16px 4px rgba(255,220,80,.9); border-color: #ffd54a; }
-  #bBlade  { right: 24px;  bottom: 96px;  width: 84px; height: 84px; }
-  #bFree   { right: 120px; bottom: 22px;  width: 84px; height: 84px; }
-  #bJump   { right: 24px;  bottom: 8px;   width: 72px; height: 72px; }
-  #bBlock  { right: 120px; bottom: 118px; width: 64px; height: 64px; }
-  #bKnife  { right: 30px;  bottom: 192px; width: 56px; height: 56px; }
-  #bEagle  { right: 200px; bottom: 120px; width: 56px; height: 56px; }
-  #bBlend  { right: 214px; bottom: 34px;  width: 56px; height: 56px; }
-  #bAct    { right: 96px;  bottom: 200px; width: auto; min-width: 120px; height: 44px; border-radius: 22px; padding: 0 14px; font-size: 14px; background: rgba(179,18,42,.8); }
-  #bPause  { right: 10px;  top: 10px; width: 44px; height: 44px; font-size: 18px; }
+#tl { position: absolute; top: 12px; left: calc(12px + var(--sl)); display: flex; gap: 12px; align-items: flex-start; }
+#mapWrap { position: relative; width: 128px; height: 128px; }
+#minimap { width: 128px; height: 128px; border-radius: 50%; display: block; box-shadow: 0 2px 14px rgba(0,0,0,.5); }
+#mapRing { position: absolute; inset: -5px; border-radius: 50%; border: 1px solid var(--line); }
+#mapN { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; font: 700 11px var(--sans); color: var(--gold); text-align: center; line-height: 14px; }
+#vitals { padding-top: 6px; }
+#health { display: flex; gap: 2px; }
+#health i { width: 9px; height: 7px; background: var(--ink); transform: skewX(-25deg); box-shadow: 0 0 4px rgba(0,0,0,.6); transition: background .2s; }
+#health i.e { background: rgba(255,255,255,.14); }
+#health.hit i:not(.e) { background: #ff5a5a; }
+#status { margin-top: 8px; display: flex; align-items: center; gap: 6px; font: 500 12px var(--sans); letter-spacing: .18em; color: var(--dim); text-shadow: 0 1px 3px #000; }
+#status svg { width: 16px; height: 16px; }
+#status.susp { color: #ffd54a; } #status.alert { color: #ff4b3e; } #status.good { color: #9fd0ff; }
+#knifeChip { margin-top: 6px; font: 500 12px var(--sans); letter-spacing: .12em; color: var(--dim); }
+
+#objective { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; max-width: 46vw; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+#objective .lab { font: 500 10px var(--sans); letter-spacing: .4em; color: var(--gold); }
+#objective .txt { font: 600 20px/1.15 var(--serif); margin-top: 2px; }
+#objective .lab::before, #objective .lab::after { content: ''; display: inline-block; width: 26px; height: 1px; background: var(--gold); opacity: .6; vertical-align: middle; margin: 0 8px; }
+#hint { position: absolute; top: 72px; left: 50%; transform: translateX(-50%); max-width: 52vw; text-align: center; font: 400 13px/1.35 var(--sans); color: var(--dim); text-shadow: 0 1px 4px #000; transition: opacity .4s; }
+#toast { position: absolute; top: 30%; left: 50%; transform: translate(-50%, 10px); text-align: center; opacity: 0; transition: opacity .5s, transform .5s; text-shadow: 0 2px 18px rgba(0,0,0,.9); white-space: nowrap; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast .t { font: 600 clamp(26px, 5vw, 44px) var(--serif); letter-spacing: .3em; }
+#toast .s { font: 400 13px var(--sans); letter-spacing: .25em; color: var(--gold); margin-top: 4px; }
+#toast .t::before, #toast .t::after { content: ''; display: inline-block; width: 40px; height: 1px; background: var(--ink); opacity: .5; vertical-align: middle; margin: 0 16px; }
+
+.wp { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+#waypoint svg { width: 22px; height: 22px; fill: var(--gold); stroke: rgba(0,0,0,.6); stroke-width: 1; filter: drop-shadow(0 0 6px rgba(216,181,108,.8)); }
+#waypoint .d { font: 500 11px var(--sans); letter-spacing: .1em; color: var(--ink); text-shadow: 0 1px 3px #000; }
+#waypoint .arr { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid var(--gold); margin: -24px 0 0 -7px; transform-origin: 7px 24px; }
+#killMark svg { width: 30px; height: 30px; stroke: #ff3b30; filter: drop-shadow(0 0 6px rgba(255,40,40,.9)); animation: kpulse .8s infinite; }
+@keyframes kpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+#knifeMark { width: 34px; height: 34px; border: 1.5px solid rgba(255,255,255,.8); border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,.6); }
+#knifeMark::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #fff; }
+
+/* ---------- Управление ---------- */
+#controls { position: fixed; inset: 0; z-index: 11; }
+#stick { position: absolute; width: 124px; height: 124px; margin: -62px; border-radius: 50%; border: 1.5px solid var(--line); background: radial-gradient(circle, rgba(255,255,255,.06), rgba(0,0,0,.18)); pointer-events: none; opacity: 0; transition: opacity .15s, border-color .15s; }
+#stick.on { opacity: 1; }
+#stick.free { border-color: var(--gold); box-shadow: 0 0 18px rgba(216,181,108,.35); }
+#knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px; border-radius: 50%; background: rgba(243,237,225,.85); box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+#stick.free #knob { background: var(--gold); }
+#stickTag { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); font: 500 11px var(--sans); letter-spacing: .25em; color: var(--gold); opacity: 0; transition: opacity .2s; white-space: nowrap; }
+#stick.free #stickTag { opacity: 1; }
+#lockZone { position: absolute; width: 44px; height: 44px; margin: -22px; border-radius: 50%; border: 1.5px dashed var(--line); display: flex; align-items: center; justify-content: center; color: var(--dim); opacity: 0; pointer-events: none; transition: opacity .2s; }
+#lockZone.show { opacity: 1; } #lockZone.hot, #lockZone.locked { border-style: solid; border-color: var(--gold); color: var(--gold); opacity: 1; }
+#lockZone svg { width: 20px; height: 20px; }
+#stickHintL { position: absolute; left: calc(16px + var(--sl)); bottom: 18px; font: 400 11px var(--sans); letter-spacing: .2em; color: rgba(243,237,225,.35); pointer-events: none; }
+
+.btn { position: absolute; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink);
+  background: var(--glass); border: 1.5px solid var(--line); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.35); transition: transform .08s, background .15s, border-color .2s, box-shadow .2s, color .2s; }
+.btn.press { transform: scale(.9); background: rgba(243,237,225,.22); }
+.btn .lb { font: 500 9px var(--sans); letter-spacing: .18em; margin-top: 2px; color: var(--dim); }
+.btn.on { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 16px rgba(216,181,108,.35); }
+.btn.on .lb { color: var(--gold); }
+.btn.kill { border-color: #ff3b30; color: #ff5a4e; box-shadow: 0 0 22px rgba(255,40,40,.55), inset 0 0 12px rgba(255,40,40,.25); animation: kpulse .8s infinite; }
+.btn.warn { border-color: #ffd54a; color: #ffd54a; box-shadow: 0 0 22px rgba(255,213,74,.6); animation: kpulse .35s infinite; }
+.btn.off { opacity: .35; }
+.badge { position: absolute; top: -2px; right: -2px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--ink); color: #111; font: 700 11px/18px var(--sans); text-align: center; }
+#bBlade { right: calc(26px + var(--sr)); bottom: 30px; width: 82px; height: 82px; }
+#bBlade svg { width: 34px; height: 34px; }
+#bJump { right: calc(122px + var(--sr)); bottom: 14px; width: 68px; height: 68px; }
+#bBlock { right: calc(32px + var(--sr)); bottom: 128px; width: 60px; height: 60px; }
+#bKnife { right: calc(108px + var(--sr)); bottom: 104px; width: 52px; height: 52px; }
+#bEagle { right: calc(178px + var(--sr)); bottom: 152px; width: 48px; height: 48px; }
+#bBlend { right: calc(206px + var(--sr)); bottom: 74px; width: 50px; height: 50px; }
+#bPause { right: calc(12px + var(--sr)); top: 12px; width: 40px; height: 40px; }
+#bPause svg { width: 18px; height: 18px; }
+#prompt { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 24px;
+  background: rgba(14,12,11,.6); border: 1.5px solid var(--gold); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); font: 500 13px var(--sans); letter-spacing: .1em; white-space: nowrap; box-shadow: 0 0 18px rgba(216,181,108,.3); }
+#prompt .ic { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: #1a140c; display: flex; align-items: center; justify-content: center; }
+#prompt .ic svg { width: 18px; height: 18px; stroke-width: 2.2; }
+#prompt.press { transform: translate(-50%, -100%) scale(.94); }
+
+/* ---------- Экраны ---------- */
+.screen { position: fixed; inset: 0; z-index: 20; display: flex; opacity: 1; transition: opacity .35s; }
+.screen.fade { opacity: 0; pointer-events: none; }
+.shade { background: linear-gradient(90deg, rgba(8,6,5,.92) 0%, rgba(8,6,5,.6) 45%, rgba(8,6,5,.1) 100%); }
+.shadeFull { background: rgba(8,6,5,.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.emblem { width: 54px; height: 54px; color: var(--ink); }
+.title { font: 600 clamp(34px, 6.6vw, 66px)/1 var(--serif); letter-spacing: .14em; }
+.tagline { font: 500 italic 17px var(--serif); color: var(--gold); letter-spacing: .08em; margin-top: 8px; }
+.menuList { margin-top: 26px; display: flex; flex-direction: column; gap: 4px; }
+.mi { position: relative; background: none; border: 0; color: var(--dim); text-align: left; font: 500 17px var(--sans); letter-spacing: .28em; padding: 9px 0 9px 22px; cursor: pointer; transition: color .2s, padding .2s; }
+.mi::before { content: ''; position: absolute; left: 0; top: 50%; width: 10px; height: 1px; background: var(--line); transition: width .2s, background .2s; }
+.mi:active, .mi:hover { color: var(--ink); padding-left: 30px; }
+.mi:active::before, .mi:hover::before { width: 20px; background: var(--gold); }
+.mi.primary { color: var(--ink); }
+#mainMenu .col { margin: auto 0; padding: 0 calc(7vw + var(--sl)); }
+#mainMenu .foot { position: absolute; bottom: 14px; left: calc(7vw + var(--sl)); font: 400 11px var(--sans); color: rgba(243,237,225,.35); letter-spacing: .15em; }
+.head { position: absolute; top: 16px; left: calc(24px + var(--sl)); right: 24px; display: flex; align-items: center; gap: 16px; }
+.back { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--glass); color: var(--ink); display: flex; align-items: center; justify-content: center; }
+.back svg { width: 18px; height: 18px; }
+.h2 { font: 600 28px var(--serif); letter-spacing: .14em; }
+#missionList { position: absolute; left: 0; right: 0; top: 76px; bottom: 16px; display: flex; gap: 14px; overflow-x: auto; padding: 0 calc(24px + var(--sl)); align-items: stretch; touch-action: pan-x; scrollbar-width: none; }
+#missionList::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 230px; position: relative; display: flex; flex-direction: column; padding: 18px 18px 16px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(30,24,18,.75), rgba(10,8,6,.85)); overflow: hidden; }
+.card .num { position: absolute; right: 10px; top: -10px; font: 700 110px/1 var(--serif); color: rgba(243,237,225,.07); }
+.card .tag { font: 500 10px var(--sans); letter-spacing: .35em; color: var(--gold); }
+.card h3 { font: 600 24px/1.1 var(--serif); margin: 8px 0 8px; letter-spacing: .04em; }
+.card p { font: 400 13px/1.45 var(--sans); color: var(--dim); margin: 0; flex: 1; overflow: hidden; }
+.card .st { font: 500 11px var(--sans); letter-spacing: .2em; color: var(--dim); margin: 10px 0; display: flex; gap: 6px; align-items: center; }
+.card .st.ok { color: #9fd08a; }
+.card.locked { opacity: .45; }
+.cta { border: 1px solid var(--gold); background: rgba(216,181,108,.12); color: var(--ink); font: 500 13px var(--sans); letter-spacing: .3em; padding: 11px; cursor: pointer; }
+.cta:active { background: rgba(216,181,108,.35); }
+.cta[disabled] { border-color: var(--line); background: none; color: var(--dim); }
+.panel { margin: auto; width: min(640px, calc(100% - 32px)); max-height: calc(100% - 90px); overflow-y: auto; margin-top: 76px; padding: 4px 4px 20px; touch-action: pan-y; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 0; border-bottom: 1px solid rgba(243,237,225,.1); }
+.row .k { font: 500 14px var(--sans); letter-spacing: .12em; }
+.row .k small { display: block; font-size: 11px; color: var(--dim); letter-spacing: .05em; margin-top: 3px; }
+.seg { display: flex; border: 1px solid var(--line); }
+.seg button { background: none; border: 0; color: var(--dim); font: 500 12px var(--sans); letter-spacing: .12em; padding: 8px 12px; }
+.seg button.on { background: var(--gold); color: #1a140c; }
+.tog { width: 46px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.15); position: relative; transition: background .2s; flex: 0 0 auto; }
+.tog::after { content: ''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); transition: left .2s; }
+.tog.on { background: var(--gold); } .tog.on::after { left: 23px; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 160px; height: 2px; background: var(--line); outline: none; touch-action: pan-x; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); border: 0; }
+.helpGrid { display: grid; grid-template-columns: 52px 1fr; gap: 12px 14px; align-items: center; }
+.helpGrid .ic { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--line); display: flex; align-items: center; justify-content: center; background: var(--glass); }
+.helpGrid .tx { font: 400 14px/1.4 var(--sans); color: var(--dim); }
+.helpGrid .tx b { color: var(--ink); font-weight: 500; letter-spacing: .06em; }
+.center { margin: auto; text-align: center; padding: 20px; max-width: 640px; }
+.center .title { font-size: clamp(28px, 5vw, 46px); }
+.endText { font: 500 italic 19px/1.45 var(--serif); color: var(--ink); margin: 16px auto 10px; max-width: 540px; }
+.stats { display: flex; justify-content: center; gap: 28px; margin: 14px 0 22px; }
+.stats div { font: 400 11px var(--sans); letter-spacing: .25em; color: var(--dim); }
+.stats b { display: block; font: 600 26px var(--serif); color: var(--ink); letter-spacing: .05em; }
+.btnRow { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.btnRow .cta { min-width: 170px; }
+.cta.ghost { border-color: var(--line); background: none; }
+@media (max-height: 520px) {
+  #mainMenu .emblem { width: 34px; height: 34px; }
+  #mainMenu .title { font-size: min(6vw, 10.5vh); margin-top: 6px !important; }
+  #mainMenu .tagline { font-size: 14px; margin-top: 4px; }
+  .menuList { margin-top: 12px; gap: 0; }
+  .mi { padding: 7px 0 7px 22px; font-size: 15px; }
+  #mainMenu .foot { left: auto; right: 16px; }
+  #objective .txt { font-size: 17px; }
+  #hint { top: 62px; font-size: 12px; }
+}
+#loading { background: #0a0807; flex-direction: column; align-items: center; justify-content: center; }
+#loading .bar { width: min(280px, 60vw); height: 1px; background: rgba(243,237,225,.15); margin-top: 26px; position: relative; }
+#loading .bar i { position: absolute; left: 0; top: -0.5px; height: 2px; width: 0; background: var(--gold); transition: width .3s; }
+#loading .tip { margin-top: 18px; font: 500 italic 15px var(--serif); color: var(--dim); max-width: 70vw; text-align: center; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<div id="hud" class="hidden">
-  <canvas id="minimap" width="150" height="150"></canvas>
-  <div id="health"></div>
-  <div id="status" class="anon">АНОНИМЕН</div>
-  <div id="objective"></div>
-  <div id="hint"></div>
-  <div id="toast"></div>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-blade" viewBox="0 0 24 24"><path d="M12 2.5l2 11.5-2 2.2-2-2.2z"/><path d="M8 16.2h8M12 16.5v5"/></symbol>
+    <symbol id="i-kill" viewBox="0 0 24 24"><path d="M5 19L16.5 7.5M16.5 7.5l2.7-3.2-.4 3.6zM7.5 14.5l2 2M19 19L7.5 7.5M7.5 7.5L4.8 4.3l.4 3.6zM16.5 14.5l-2 2"/></symbol>
+    <symbol id="i-jump" viewBox="0 0 24 24"><path d="M6 13l6-6 6 6M6 19l6-6 6 6"/></symbol>
+    <symbol id="i-leap" viewBox="0 0 24 24"><path d="M12 3v14M6 11l6 6 6-6M3 21h18"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M12 7v10M8.5 11h7"/></symbol>
+    <symbol id="i-knife" viewBox="0 0 24 24"><path d="M4 20l9-9M13 11l7-7-1.5 5.5-2.5 2.5z"/><path d="M8 13l3 3"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12c3.2-5.5 16.8-5.5 20 0-3.2 5.5-16.8 5.5-20 0z"/><circle cx="12" cy="12" r="3.2"/></symbol>
+    <symbol id="i-hood" viewBox="0 0 24 24"><path d="M12 2.5c-4.6 0-7 4.6-7 9.5v8.5h4.2V14c0-2.3 1.2-3.6 2.8-3.6s2.8 1.3 2.8 3.6v6.5H19V12c0-4.9-2.4-9.5-7-9.5z"/><path d="M12 2.5l1.6 3.2"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 013 0V11M11 10.5V4a1.5 1.5 0 013 0v7M14 11V5.5a1.5 1.5 0 013 0V14c0 4-2.5 7-6 7s-5.5-2-7-5l-1-2c-.6-1.2.9-2.3 1.9-1.3L8 15"/></symbol>
+    <symbol id="i-hide" viewBox="0 0 24 24"><path d="M3 20c2-6 5-9 9-9s7 3 9 9z"/><path d="M8 14l-1-4M12 11V6M16 14l1-4"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-diamond" viewBox="0 0 24 24"><path d="M12 2l7 10-7 10-7-10z"/></symbol>
+    <symbol id="i-stick" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></symbol>
+    <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></symbol>
+    <symbol id="i-emblem" viewBox="0 0 64 64"><path d="M32 4L54 56H43L32 26 21 56H10z" fill="currentColor" stroke="none"/><path d="M32 34l6 16H26z" fill="#d4202f" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<div id="hud" class="hidden bars">
+  <div id="vignette"></div>
   <div id="eagleTint"></div>
-  <div id="flash"></div>
-  <div id="crosshair"></div>
+  <div id="lowhp"></div>
+  <div id="dmg"></div>
+  <canvas id="detect"></canvas>
+  <div id="tl">
+    <div id="mapWrap"><canvas id="minimap" width="256" height="256"></canvas><div id="mapRing"></div><div id="mapN">С</div></div>
+    <div id="vitals"><div id="health"></div><div id="status"></div><div id="knifeChip"></div></div>
+  </div>
+  <div id="objective"><div class="lab">ЦЕЛЬ</div><div class="txt"></div></div>
+  <div id="hint"></div>
+  <div id="waypoint" class="wp hidden"><div class="arr"></div><svg><use href="#i-diamond"/></svg><div class="d"></div></div>
+  <div id="killMark" class="wp hidden"><svg class="i"><use href="#i-kill"/></svg></div>
+  <div id="knifeMark" class="wp hidden"></div>
+  <div id="toast"><div class="t"></div><div class="s"></div></div>
 </div>
 
-<div id="touch" class="hidden">
-  <div id="stickBase" class="hidden"></div>
-  <div id="stickKnob" class="hidden"></div>
-  <div class="tbtn" id="bBlade"><div><span class="ic">🗡</span>КЛИНОК</div></div>
-  <div class="tbtn" id="bFree"><div><span class="ic">»</span>ПАРКУР</div></div>
-  <div class="tbtn" id="bJump"><div><span class="ic">⤒</span>ПРЫЖОК</div></div>
-  <div class="tbtn" id="bBlock"><div><span class="ic">⛨</span>КОНТР</div></div>
-  <div class="tbtn" id="bKnife"><div><span class="ic">✦</span><span id="knifeCount">5</span></div></div>
-  <div class="tbtn" id="bEagle"><div><span class="ic">👁</span>ОРЁЛ</div></div>
-  <div class="tbtn" id="bBlend"><div><span class="ic">☗</span>СКРЫТ</div></div>
-  <div class="tbtn hidden" id="bAct">ДЕЙСТВИЕ</div>
-  <div class="tbtn" id="bPause">II</div>
+<div id="controls" class="hidden">
+  <div id="stickHintL">ДВИЖЕНИЕ</div>
+  <div id="stick"><div id="stickTag">ПАРКУР</div><div id="knob"></div></div>
+  <div id="lockZone"><svg class="i"><use href="#i-lock"/></svg></div>
+  <div class="btn" id="bBlade" data-act="blade"><svg class="i"><use href="#i-blade"/></svg></div>
+  <div class="btn" id="bJump" data-act="jump"><svg class="i"><use href="#i-jump"/></svg><div class="lb">ПРЫЖОК</div></div>
+  <div class="btn" id="bBlock" data-act="block"><svg class="i"><use href="#i-shield"/></svg></div>
+  <div class="btn" id="bKnife" data-act="knife"><svg class="i"><use href="#i-knife"/></svg><div class="badge" id="knifeBadge">5</div></div>
+  <div class="btn" id="bEagle" data-act="eagle"><svg class="i"><use href="#i-eye"/></svg></div>
+  <div class="btn" id="bBlend" data-act="blend"><svg class="i"><use href="#i-hood"/></svg></div>
+  <div class="btn" id="bPause" data-act="pause"><svg class="i"><use href="#i-pause"/></svg></div>
+  <div id="prompt" class="hidden" data-act="act"><div class="ic"><svg class="i"><use href="#i-hand"/></svg></div><span></span></div>
 </div>
 
-<div id="mainMenu" class="screen">
-  <div class="logo">ТЕНЬ АССАСИНА<small>НИЧТО НЕ ИСТИННО</small></div>
-  <div style="margin-top:22px;display:flex;flex-direction:column;align-items:center">
-    <button class="menu-btn" id="btnPlay">МИССИИ</button>
-    <button class="menu-btn" id="btnFree">СВОБОДНЫЙ ГОРОД</button>
-    <button class="menu-btn" id="btnHelp">УПРАВЛЕНИЕ</button>
+<div id="loading" class="screen">
+  <svg class="emblem"><use href="#i-emblem"/></svg>
+  <div class="title" style="font-size:30px;margin-top:16px">ТЕНЬ АССАСИНА</div>
+  <div class="bar"><i id="loadBar"></i></div>
+  <div class="tip" id="loadTip">Загрузка воспоминаний…</div>
+</div>
+
+<div id="mainMenu" class="screen shade fade hidden">
+  <div class="col">
+    <svg class="emblem"><use href="#i-emblem"/></svg>
+    <div class="title" style="margin-top:14px">ТЕНЬ<br>АССАСИНА</div>
+    <div class="tagline">Ничто не истинно. Всё дозволено.</div>
+    <div class="menuList">
+      <button class="mi primary" data-go="missions">ЗАДАНИЯ</button>
+      <button class="mi" data-go="free">СВОБОДНЫЙ ГОРОД</button>
+      <button class="mi" data-go="help">УПРАВЛЕНИЕ</button>
+      <button class="mi" data-go="settings">НАСТРОЙКИ</button>
+    </div>
+  </div>
+  <div class="foot">ВОСПОМИНАНИЯ БРАТСТВА · 1191</div>
+</div>
+
+<div id="missionMenu" class="screen shadeFull fade hidden">
+  <div class="head"><div class="back" data-go="main"><svg class="i"><use href="#i-back"/></svg></div><div class="h2">ЗАДАНИЯ БРАТСТВА</div></div>
+  <div id="missionList"></div>
+</div>
+
+<div id="helpMenu" class="screen shadeFull fade hidden">
+  <div class="head"><div class="back" data-go="main"><svg class="i"><use href="#i-back"/></svg></div><div class="h2">УПРАВЛЕНИЕ</div></div>
+  <div class="panel"><div class="helpGrid">
+    <div class="ic"><svg class="i"><use href="#i-stick"/></svg></div><div class="tx"><b>Джойстик</b> — коснись левой половины экрана. Чуть отклонил — шаг, сильнее — бег. <b>До упора — паркур</b>: кольцо загорается золотом, герой сам взбегает по стенам и перепрыгивает с крыши на крышу. Потяни стик далеко вверх к замку — бег зафиксируется.</div>
+    <div class="ic"><svg class="i"><use href="#i-swipe"/></svg></div><div class="tx"><b>Камера</b> — свайп по правой стороне. При беге камера сама встаёт за спину.</div>
+    <div class="ic"><svg class="i"><use href="#i-blade"/></svg></div><div class="tx"><b>Клинок</b>. Когда над врагом горит красная метка, а кнопка пульсирует — убийство с одного удара: со спины, по ничего не подозревающему или в прыжке сверху.</div>
+    <div class="ic"><svg class="i"><use href="#i-jump"/></svg></div><div class="tx"><b>Прыжок</b>. На стене — отскок назад. На краю балки башни — <b>прыжок веры</b> в стог сена.</div>
+    <div class="ic"><svg class="i"><use href="#i-shield"/></svg></div><div class="tx"><b>Контратака</b> — жми, когда кнопка вспыхнет жёлтым (над стражником «!»).</div>
+    <div class="ic"><svg class="i"><use href="#i-knife"/></svg></div><div class="tx"><b>Метательный нож</b> летит во врага в белом прицеле — наведи на него камеру.</div>
+    <div class="ic"><svg class="i"><use href="#i-eye"/></svg></div><div class="tx"><b>Орлиное зрение</b>: цели золотые, стража красная — сквозь стены.</div>
+    <div class="ic"><svg class="i"><use href="#i-hood"/></svg></div><div class="tx"><b>Скрытность</b>: руки сложены, голова склонена. Среди горожан стража тебя не замечает.</div>
+    <div class="ic"><svg class="i"><use href="#i-hand"/></svg></div><div class="tx"><b>Действия</b> появляются прямо в мире золотой подсказкой: синхронизация, кража, укрытие в сене или в саду на крыше.</div>
+  </div>
+  <p class="tx" style="font:400 13px/1.5 var(--sans);color:var(--dim);margin-top:18px">Метки над стражей: <span style="color:#ffd54a">жёлтая</span> — подозревает, <span style="color:#ff4b3e">красная</span> — бой. Дуги вокруг центра экрана показывают, откуда на тебя смотрят. Клавиатура: WASD, мышь, Shift — паркур, Пробел, ЛКМ/J, ПКМ/K, F, Q, C, E, Esc.</p></div>
+</div>
+
+<div id="settingsMenu" class="screen shadeFull fade hidden">
+  <div class="head"><div class="back" data-go="main"><svg class="i"><use href="#i-back"/></svg></div><div class="h2">НАСТРОЙКИ</div></div>
+  <div class="panel">
+    <div class="row"><div class="k">ГРАФИКА<small>Применится после перезапуска сцены</small></div><div class="seg" id="setQuality"><button data-v="low">НИЗКАЯ</button><button data-v="medium">СРЕДНЯЯ</button><button data-v="high">ВЫСОКАЯ</button></div></div>
+    <div class="row"><div class="k">ЧУВСТВИТЕЛЬНОСТЬ КАМЕРЫ</div><input type="range" id="setSens" min="0.4" max="2" step="0.05"></div>
+    <div class="row"><div class="k">ГРОМКОСТЬ</div><input type="range" id="setVol" min="0" max="1" step="0.05"></div>
+    <div class="row"><div class="k">ИНВЕРСИЯ ПО ВЕРТИКАЛИ</div><div class="tog" id="setInv"></div></div>
+    <div class="row"><div class="k">КАМЕРА ЗА СПИНОЙ<small>Камера сама разворачивается при беге</small></div><div class="tog" id="setAuto"></div></div>
+    <div class="row"><div class="k">ВИБРАЦИЯ</div><div class="tog" id="setVib"></div></div>
   </div>
 </div>
 
-<div id="missionMenu" class="screen hidden">
-  <div class="logo" style="font-size:28px">ЗАДАНИЯ БРАТСТВА</div>
-  <div class="missions" id="missionList"></div>
-  <button class="menu-btn" data-back>НАЗАД</button>
-</div>
-
-<div id="helpMenu" class="screen hidden">
-  <div class="help">
-    <b>Левая половина экрана</b> — джойстик движения (сильнее отклонил — бежишь).<br>
-    <b>Правая половина</b> — свайп поворачивает камеру.<br>
-    <b>ПАРКУР (удерживать)</b> — свободный бег: спринт, автоматический подъём по стенам и прыжки с края крыш. Как в оригинале — держи и беги прямо на стену!<br>
-    <b>ПРЫЖОК</b> — прыжок; на стене — отскок назад; на вершине башни — <b>Прыжок веры</b> в стог сена.<br>
-    <b>КЛИНОК</b> — скрытый клинок. Кнопка светится красным, когда возможно <b>убийство одним ударом</b>: со спины, по ничего не подозревающей цели, или <b>сверху в прыжке</b>.<br>
-    <b>КОНТР</b> — нажми, когда стражник замахивается (над ним вспыхивает «!»), — смертельная контратака.<br>
-    <b>✦ Ножи</b> — бросок метательного ножа в ближайшего врага перед тобой.<br>
-    <b>ОРЁЛ</b> — орлиное зрение: цели светятся золотым, стража — красным, даже сквозь стены.<br>
-    <b>СКРЫТ</b> — режим слияния с толпой: идёшь медленно, но среди горожан стража тебя не замечает.<br>
-    <b>ДЕЙСТВИЕ</b> — появляется по ситуации: синхронизация, карманная кража, спрятаться в сене.<br><br>
-    Над стражником: <span style="color:#ffd54a">жёлтый ▲</span> — подозревает, <span style="color:#ff3b3b">красный ▲</span> — бой. Уйди из поля зрения или спрячься в сене, чтобы снова стать анонимным.<br><br>
-    <b>Клавиатура:</b> WASD — движение, мышь — камера (клик захватывает курсор), Shift — паркур, Пробел — прыжок, ЛКМ/J — клинок, ПКМ/K — контр, F — нож, Q — орёл, C — скрытность, E — действие, Esc — пауза.
+<div id="pauseMenu" class="screen shadeFull fade hidden">
+  <div class="center">
+    <div class="tagline" style="margin:0 0 6px">ПАУЗА</div>
+    <div class="title" id="pauseTitle"></div>
+    <div class="endText" id="pauseObj"></div>
+    <div class="btnRow" style="flex-direction:column;align-items:center">
+      <button class="cta" id="btnResume">ПРОДОЛЖИТЬ</button>
+      <button class="cta ghost" id="btnRestart">НАЧАТЬ ЗАНОВО</button>
+      <button class="cta ghost" id="btnPauseSet">НАСТРОЙКИ</button>
+      <button class="cta ghost" id="btnQuit">В МЕНЮ</button>
+    </div>
   </div>
-  <button class="menu-btn" data-back>НАЗАД</button>
 </div>
 
-<div id="pauseMenu" class="screen hidden">
-  <div class="logo" style="font-size:30px">ПАУЗА</div>
-  <div id="pauseObjective" style="margin:10px;color:#c9a96e;text-align:center"></div>
-  <button class="menu-btn" id="btnResume">ПРОДОЛЖИТЬ</button>
-  <button class="menu-btn" id="btnRestart">ЗАНОВО</button>
-  <button class="menu-btn" id="btnQuit">В МЕНЮ</button>
+<div id="endMenu" class="screen shadeFull fade hidden">
+  <div class="center">
+    <div class="title" id="endTitle"></div>
+    <div class="endText" id="endText"></div>
+    <div class="stats" id="endStats"></div>
+    <div class="btnRow">
+      <button class="cta" id="btnEndNext">ДАЛЕЕ</button>
+      <button class="cta ghost" id="btnEndRetry">ЕЩЁ РАЗ</button>
+      <button class="cta ghost" id="btnEndMenu">В МЕНЮ</button>
+    </div>
+  </div>
 </div>
 
-<div id="endMenu" class="screen hidden">
-  <div class="logo" id="endTitle" style="font-size:34px">СИНХРОНИЗАЦИЯ</div>
-  <div id="endText" style="margin:14px;max-width:600px;text-align:center;color:#d8ccb4;line-height:1.5"></div>
-  <button class="menu-btn" id="btnEndNext">ДАЛЕЕ</button>
-  <button class="menu-btn" id="btnEndRetry">ЕЩЁ РАЗ</button>
-  <button class="menu-btn" id="btnEndMenu">В МЕНЮ</button>
-</div>
-
-<script src="three.min.js"></script>
-<script src="game.js"></script>
+<script src="vendor/three.js"></script>
+<script src="js/core.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/world.js"></script>
+<script src="js/rig.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>

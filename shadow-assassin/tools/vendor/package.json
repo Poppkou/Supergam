@@ -1,0 +1,1 @@
+{"name":"sa-vendor","private":true,"version":"1.0.0","dependencies":{"@fontsource/cormorant-garamond":"^5.1.0","@fontsource/roboto-condensed":"^5.1.0","esbuild":"^0.24.0","three":"^0.169.0"}}
